@@ -1,0 +1,31 @@
+<view class="tab-bar">
+  <view
+    class="tab-item {{item.isPublish ? 'tab-item--publish' : ''}}"
+    wx:for="{{list}}"
+    wx:key="pagePath"
+    data-index="{{index}}"
+    data-path="{{item.pagePath}}"
+    data-publish="{{item.isPublish}}"
+    bindtap="onTap"
+  >
+    <block wx:if="{{item.isPublish}}">
+      <view class="publish-wrap">
+        <view class="publish-ball">
+          <image class="publish-plus" src="/images/tab/plus.svg" mode="aspectFit" />
+        </view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="tab-content">
+        <view class="tab-icon-wrap {{selected === index ? 'tab-icon-wrap--active' : ''}}">
+          <image
+            class="tab-icon"
+            src="{{selected === index ? item.iconActive : item.icon}}"
+            mode="aspectFit"
+          />
+        </view>
+        <text class="tab-label {{selected === index ? 'tab-label--active' : ''}}">{{item.text}}</text>
+      </view>
+    </block>
+  </view>
+</view>

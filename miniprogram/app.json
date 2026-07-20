@@ -1,0 +1,49 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/explore/index",
+    "pages/publish/index",
+    "pages/message/index",
+    "pages/profile/index",
+    "pages/profile/edit"
+  ],
+  "window": {
+    "backgroundColor": "#F3F6F2",
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#F3F6F2",
+    "navigationBarTitleText": "U-Know",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "rgba(255,255,255,0.55)",
+    "selectedColor": "#A3E635",
+    "backgroundColor": "#0A2E1A",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/explore/index",
+        "text": "待定"
+      },
+      {
+        "pagePath": "pages/publish/index",
+        "text": "发布"
+      },
+      {
+        "pagePath": "pages/message/index",
+        "text": "消息"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

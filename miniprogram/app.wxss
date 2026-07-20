@@ -1,0 +1,34 @@
+/**app.wxss**/
+page {
+  --brand: #028527;
+  --ink: #0a2e1a;
+  --ink-soft: #14522e;
+  --lime: #a3e635;
+  --bg: #f3f6f2;
+  --surface: #ffffff;
+  --text: #0f1f16;
+  --text-secondary: #5c6b60;
+  --text-muted: #9aa79e;
+
+  background: var(--bg);
+  color: var(--text);
+  font-size: 28rpx;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+}
+
+.page-blank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  color: var(--text-muted);
+  font-size: 28rpx;
+}

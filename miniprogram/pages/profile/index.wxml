@@ -1,0 +1,34 @@
+<view class="page profile-page">
+  <view class="profile-header" bindtap="onTapHeader">
+    <image
+      class="profile-avatar {{loggedIn ? '' : 'profile-avatar--guest'}}"
+      src="{{avatarUrl}}"
+      mode="aspectFill"
+    />
+    <view class="profile-meta">
+      <view class="profile-name">{{nickName}}</view>
+      <view class="profile-sub" wx:if="{{loggedIn}}">{{phoneNumber}}</view>
+      <view class="profile-sub" wx:else>点击登录</view>
+    </view>
+  </view>
+
+  <view class="login-mask" wx:if="{{showLogin}}" catchtouchmove="noop" bindtap="onCloseLogin">
+    <view class="login-sheet" catchtap="noop">
+      <view class="login-handle"></view>
+      <view class="login-title">手机号登录</view>
+      <view class="login-desc">授权微信绑定手机号即可完成登录</view>
+
+      <button
+        class="login-submit"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onGetPhoneNumber"
+        loading="{{submitting}}"
+        disabled="{{submitting}}"
+      >
+        授权手机号并登录
+      </button>
+
+      <view class="login-cancel" bindtap="onCloseLogin">取消</view>
+    </view>
+  </view>
+</view>
