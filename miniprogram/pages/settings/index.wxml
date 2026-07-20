@@ -1,0 +1,60 @@
+<view class="page settings-page">
+  <view class="settings-card">
+    <view class="settings-row" bindtap="onTapEditProfile">
+      <view class="settings-label">{{t.settings.editProfile}}</view>
+      <view class="settings-right">
+        <view class="settings-arrow"></view>
+      </view>
+    </view>
+
+    <view class="settings-line"></view>
+
+    <view class="settings-row" bindtap="onTapLocale">
+      <view class="settings-label">{{t.settings.language}}</view>
+      <view class="settings-right">
+        <text class="settings-value">{{localeLabel}}</text>
+        <view class="settings-arrow"></view>
+      </view>
+    </view>
+
+    <view class="settings-line"></view>
+
+    <view class="settings-row" bindtap="onTapAbout">
+      <view class="settings-label">{{t.settings.about}}</view>
+      <view class="settings-right">
+        <view class="settings-arrow"></view>
+      </view>
+    </view>
+
+    <view class="settings-line"></view>
+
+    <view class="settings-row" bindtap="onTapContact">
+      <view class="settings-label">{{t.settings.contact}}</view>
+      <view class="settings-right">
+        <view class="settings-arrow"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="sheet-mask" wx:if="{{showLocaleSheet}}" catchtouchmove="noop" bindtap="onCloseLocaleSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="locale-sheet">
+        <view class="locale-sheet-head">
+          <view class="locale-sheet-cancel" bindtap="onCloseLocaleSheet">{{t.common.cancel}}</view>
+          <view class="locale-sheet-title">{{t.settings.selectLanguage}}</view>
+          <view class="locale-sheet-spacer"></view>
+        </view>
+        <view
+          wx:for="{{localeOptions}}"
+          wx:key="code"
+          class="locale-sheet-item {{locale === item.code ? 'locale-sheet-item--active' : ''}} {{index === localeOptions.length - 1 ? 'locale-sheet-item--last' : ''}}"
+          data-code="{{item.code}}"
+          bindtap="onPickLocale"
+        >
+          <text>{{item.label}}</text>
+          <view class="locale-check" wx:if="{{locale === item.code}}"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

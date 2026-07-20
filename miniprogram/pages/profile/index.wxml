@@ -1,22 +1,132 @@
 <view class="page profile-page">
-  <view class="profile-header" bindtap="onTapHeader">
-    <image
-      class="profile-avatar {{loggedIn ? '' : 'profile-avatar--guest'}}"
-      src="{{avatarUrl}}"
-      mode="aspectFill"
-    />
-    <view class="profile-meta">
-      <view class="profile-name">{{nickName}}</view>
-      <view class="profile-sub" wx:if="{{loggedIn}}">{{phoneNumber}}</view>
-      <view class="profile-sub" wx:else>点击登录</view>
+  <scroll-view
+    class="profile-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onPullRefresh"
+    bindscrolltolower="onReachBottomList"
+    lower-threshold="120"
+  >
+    <view class="profile-top">
+      <view class="profile-header" bindtap="onTapHeader">
+        <image
+          class="profile-avatar {{loggedIn ? '' : 'profile-avatar--guest'}}"
+          src="{{avatarUrl}}"
+          mode="aspectFill"
+        />
+        <view class="profile-meta">
+          <view class="profile-name">{{nickName}}</view>
+          <view class="profile-sub {{loggedIn && !bio ? 'profile-sub--muted' : ''}}" wx:if="{{loggedIn}}">{{bio || t.profile.noBio}}</view>
+          <view class="profile-sub" wx:else>{{t.profile.tapToLogin}}</view>
+        </view>
+        <view class="profile-settings" catchtap="onTapSettings">
+          <image class="profile-settings-icon" src="/images/settings.svg" mode="aspectFit" />
+        </view>
+      </view>
+
+      <view class="profile-stats">
+        <view class="profile-stat" bindtap="onTapFollowers">
+          <text class="profile-stat-num">{{followerCount}}</text>
+          <text class="profile-stat-label">{{t.profile.followers}}</text>
+        </view>
+        <view class="profile-stat" bindtap="onTapFollowing">
+          <text class="profile-stat-num">{{followingCount}}</text>
+          <text class="profile-stat-label">{{t.profile.following}}</text>
+        </view>
+        <view class="profile-stat">
+          <text class="profile-stat-num">{{likeCollectCount}}</text>
+          <text class="profile-stat-label">{{t.profile.likeCollect}}</text>
+        </view>
+      </view>
     </view>
-  </view>
+
+    <view class="profile-content" wx:if="{{loggedIn}}">
+      <view class="profile-tabs">
+        <view
+          class="profile-tab {{mainTab === 'posts' ? 'profile-tab--active' : ''}}"
+          data-tab="posts"
+          bindtap="onSwitchMainTab"
+        >{{t.profile.tabPosts}}</view>
+        <view
+          class="profile-tab {{mainTab === 'collect' ? 'profile-tab--active' : ''}}"
+          data-tab="collect"
+          bindtap="onSwitchMainTab"
+        >{{t.profile.tabCollect}}</view>
+      </view>
+
+      <view class="profile-filters" wx:if="{{mainTab === 'posts'}}">
+        <view
+          class="profile-filter {{postFilter === 'public' ? 'profile-filter--active' : ''}}"
+          data-filter="public"
+          bindtap="onSwitchPostFilter"
+        >{{t.profile.filterPublic}} {{publicCount}}</view>
+        <view
+          class="profile-filter {{postFilter === 'private' ? 'profile-filter--active' : ''}}"
+          data-filter="private"
+          bindtap="onSwitchPostFilter"
+        >
+          <image class="profile-filter-lock" src="/images/lock.svg" mode="aspectFit" />
+          <text>{{t.profile.filterPrivate}} {{privateCount}}</text>
+        </view>
+        <view
+          class="profile-filter {{postFilter === 'draft' ? 'profile-filter--active' : ''}}"
+          data-filter="draft"
+          bindtap="onSwitchPostFilter"
+        >{{t.profile.filterDraft}} {{draftCount}}</view>
+      </view>
+
+      <view class="profile-drafts" wx:if="{{mainTab === 'posts' && postFilter === 'draft'}}">
+        <view
+          class="profile-draft-card"
+          wx:for="{{draftList}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onTapDraft"
+        >
+          <view class="profile-draft-cover">
+            <image
+              wx:if="{{item.cover}}"
+              class="profile-draft-image"
+              src="{{item.cover}}"
+              mode="aspectFill"
+            />
+            <view wx:else class="profile-draft-image profile-draft-image--text">
+              <text>{{item.title || t.profile.draftUntitled}}</text>
+            </view>
+          </view>
+          <view class="profile-draft-title">{{item.title || t.profile.draftUntitled}}</view>
+        </view>
+        <view class="profile-empty" wx:if="{{!draftList.length}}">{{t.profile.emptyDraft}}</view>
+      </view>
+
+      <post-waterfall
+        wx:else
+        list="{{list}}"
+        loading="{{loading}}"
+        hasMore="{{hasMore}}"
+        emptyText="{{emptyText}}"
+        loadingText="{{t.common.loading}}"
+        noMoreText="{{t.feed.noMore}}"
+        showViews="{{mainTab === 'posts'}}"
+        bind:itemtap="onTapPost"
+      />
+    </view>
+
+    <view class="profile-guest" wx:else>
+      <text>{{t.profile.loginToSeePosts}}</text>
+    </view>
+
+    <view class="profile-scroll-pad"></view>
+  </scroll-view>
 
   <view class="login-mask" wx:if="{{showLogin}}" catchtouchmove="noop" bindtap="onCloseLogin">
     <view class="login-sheet" catchtap="noop">
       <view class="login-handle"></view>
-      <view class="login-title">手机号登录</view>
-      <view class="login-desc">授权微信绑定手机号即可完成登录</view>
+      <view class="login-title">{{t.profile.loginTitle}}</view>
+      <view class="login-desc">{{t.profile.loginDesc}}</view>
 
       <button
         class="login-submit"
@@ -25,10 +135,10 @@
         loading="{{submitting}}"
         disabled="{{submitting}}"
       >
-        授权手机号并登录
+        {{t.profile.loginSubmit}}
       </button>
 
-      <view class="login-cancel" bindtap="onCloseLogin">取消</view>
+      <view class="login-cancel" bindtap="onCloseLogin">{{t.common.cancel}}</view>
     </view>
   </view>
 </view>

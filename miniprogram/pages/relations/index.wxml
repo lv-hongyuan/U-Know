@@ -1,0 +1,81 @@
+<view class="page relations-page">
+  <view class="relations-tabs">
+    <view
+      class="relations-tab {{tab === 'mutual' ? 'relations-tab--active' : ''}}"
+      data-tab="mutual"
+      bindtap="onSwitchTab"
+    >{{t.relations.tabMutual}}</view>
+    <view
+      class="relations-tab {{tab === 'following' ? 'relations-tab--active' : ''}}"
+      data-tab="following"
+      bindtap="onSwitchTab"
+    >{{t.relations.tabFollowing}}</view>
+    <view
+      class="relations-tab {{tab === 'followers' ? 'relations-tab--active' : ''}}"
+      data-tab="followers"
+      bindtap="onSwitchTab"
+    >{{t.relations.tabFollowers}}</view>
+  </view>
+
+  <view class="relations-search">
+    <view class="relations-search-inner">
+      <view class="relations-search-icon"></view>
+      <input
+        class="relations-search-input"
+        value="{{keyword}}"
+        placeholder="{{searchPlaceholder}}"
+        confirm-type="search"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <view
+        class="relations-search-clear"
+        wx:if="{{keyword}}"
+        bindtap="onClearSearch"
+      >×</view>
+    </view>
+  </view>
+
+  <view class="relations-toolbar">
+    <view class="relations-count">{{listTitle}} ({{total}})</view>
+    <view class="relations-sort">{{t.relations.sortDefault}}</view>
+  </view>
+
+  <scroll-view
+    class="relations-list"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    bindscrolltolower="onReachBottom"
+  >
+    <view
+      class="relations-item"
+      wx:for="{{list}}"
+      wx:key="openid"
+    >
+      <image
+        class="relations-avatar"
+        src="{{item.avatarUrl || defaultAvatar}}"
+        mode="aspectFill"
+      />
+      <view class="relations-meta">
+        <view class="relations-name">{{item.nickName}}</view>
+        <view class="relations-desc" wx:if="{{item.bio}}">{{item.bio}}</view>
+        <view class="relations-desc" wx:elif="{{item.hometown}}">{{item.hometown}}</view>
+        <view class="relations-desc relations-desc--muted" wx:else>{{t.profile.noBio}}</view>
+      </view>
+      <view
+        class="relations-action {{item.relation === 'mutual' ? 'relations-action--mutual' : ''}} {{item.iFollow ? '' : 'relations-action--primary'}}"
+        data-openid="{{item.openid}}"
+        data-ifollow="{{item.iFollow ? 1 : 0}}"
+        bindtap="onTapAction"
+      >{{item.actionText}}</view>
+    </view>
+
+    <view class="relations-empty" wx:if="{{!loading && list.length === 0}}">
+      {{emptyText}}
+    </view>
+    <view class="relations-loading" wx:if="{{loading}}">{{t.common.loading}}</view>
+    <view class="relations-end" wx:if="{{!loading && list.length > 0 && !hasMore}}">{{t.relations.noMore}}</view>
+  </scroll-view>
+</view>

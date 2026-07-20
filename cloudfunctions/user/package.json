@@ -1,0 +1,9 @@
+{
+  "name": "user",
+  "version": "1.0.0",
+  "description": "用户关系：关注 / 粉丝 / 互关列表",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

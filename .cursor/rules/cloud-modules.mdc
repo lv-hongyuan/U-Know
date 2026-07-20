@@ -1,0 +1,41 @@
+---
+description: Cloud modules & DB collections — keep domains separate
+globs: cloudfunctions/**/*.{js,json}
+alwaysApply: true
+---
+
+# Cloud 模块与数据表边界
+
+不同业务模块必须拆开：独立云函数 + 独立数据表。禁止把无关能力塞进已有函数（尤其 `login`）。
+
+## 现有约定
+
+| 模块 | 云函数 | 数据表 | 职责 |
+|------|--------|--------|------|
+| 登录鉴权 | `login` | `users`（读写资料） | 手机号登录、换绑、改资料、`getProfile` |
+| 用户关系 | `user` | `follows` + 更新 `users` 计数 | 关注/取关/互关列表/`isFollowing` |
+| 社区发帖 | `post` | `posts` | 发布图文、首页/广场信息流；`visibility: public|private` |
+
+## 新增能力时
+
+1. **先定模块**：判断属于登录、关系、内容、消息等哪一类；跨类不要复用同一云函数。
+2. **新建云函数**：在 `cloudfunctions/<module>/` 建 `index.js` + `package.json` + `config.json`；客户端 `utils/` 封装调用该函数名。
+3. **新建数据表**：关系/业务实体用独立集合（如 `follows`、`posts`），不要把列表塞进用户文档大数组；用户表只保留聚合计数字段（如 `followerCount`）。
+4. **集合初始化**：云函数内 `ensureCollection` 幂等创建；文档里写清字段含义。
+5. **部署提醒**：新增或改动云函数后，在回复中提醒「上传并部署：云端安装依赖」。
+
+```js
+// ❌ BAD — 把关注塞进 login
+exports.main = async (event) => {
+  if (type === "login") { /* ... */ }
+  if (type === "follow") { /* ... */ } // 不要
+};
+
+// ✅ GOOD — 关注在 user 云函数 + follows 表
+// cloudfunctions/user/index.js → follows 集合
+```
+
+## 客户端
+
+- 按模块拆 `utils/`（如 `user.js` 本地用户态、`follow.js` 调 `user` 云函数）。
+- 不要在页面里直接散落 `wx.cloud.callFunction({ name: "login", ... })` 调用非登录能力。

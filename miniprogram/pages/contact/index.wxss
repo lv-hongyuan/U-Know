@@ -1,0 +1,10 @@
+.contact-page {
+  padding: 32rpx;
+}
+
+.page-blank {
+  padding: 80rpx 24rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #5c6b60;
+}

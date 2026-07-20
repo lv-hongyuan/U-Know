@@ -1,0 +1,66 @@
+<view class="wf">
+  <view class="wf-cols" wx:if="{{left.length || right.length}}">
+    <view class="wf-col">
+      <view class="wf-card" wx:for="{{left}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapItem">
+        <view class="wf-cover-wrap" style="padding-bottom: {{item.coverRatio * 100}}%;">
+          <image
+            wx:if="{{!item.isText}}"
+            class="wf-cover"
+            src="{{item.cover}}"
+            mode="aspectFill"
+            lazy-load
+          />
+          <view wx:else class="wf-cover wf-cover--text">
+            <text class="wf-cover-title">{{item.title}}</text>
+          </view>
+          <view class="wf-views" wx:if="{{showViews}}">
+            <image class="wf-views-icon" src="/images/eye.svg" mode="aspectFit" />
+            <text class="wf-views-num">{{item.viewCount || 0}}</text>
+          </view>
+        </view>
+        <view class="wf-title" wx:if="{{item.title}}">{{item.title}}</view>
+        <view class="wf-meta">
+          <image class="wf-avatar" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load />
+          <text class="wf-name">{{item.nickName}}</text>
+          <view class="wf-like">
+            <image class="wf-heart" src="/images/heart.svg" mode="aspectFit" />
+            <text class="wf-like-num">{{item.likeCount}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="wf-col">
+      <view class="wf-card" wx:for="{{right}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapItem">
+        <view class="wf-cover-wrap" style="padding-bottom: {{item.coverRatio * 100}}%;">
+          <image
+            wx:if="{{!item.isText}}"
+            class="wf-cover"
+            src="{{item.cover}}"
+            mode="aspectFill"
+            lazy-load
+          />
+          <view wx:else class="wf-cover wf-cover--text">
+            <text class="wf-cover-title">{{item.title}}</text>
+          </view>
+          <view class="wf-views" wx:if="{{showViews}}">
+            <image class="wf-views-icon" src="/images/eye.svg" mode="aspectFit" />
+            <text class="wf-views-num">{{item.viewCount || 0}}</text>
+          </view>
+        </view>
+        <view class="wf-title" wx:if="{{item.title}}">{{item.title}}</view>
+        <view class="wf-meta">
+          <image class="wf-avatar" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load />
+          <text class="wf-name">{{item.nickName}}</text>
+          <view class="wf-like">
+            <image class="wf-heart" src="/images/heart.svg" mode="aspectFit" />
+            <text class="wf-like-num">{{item.likeCount}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="wf-empty" wx:if="{{!loading && !left.length && !right.length}}">{{emptyText}}</view>
+  <view class="wf-status" wx:if="{{loading}}">{{loadingText}}</view>
+  <view class="wf-status" wx:elif="{{!hasMore && (left.length || right.length)}}">{{noMoreText}}</view>
+</view>

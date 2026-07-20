@@ -1,0 +1,41 @@
+---
+description: WeChat mini-program i18n — never hardcode UI copy in wxml/js
+globs: miniprogram/**/*.{wxml,js,json}
+alwaysApply: true
+---
+
+# Mini-program i18n
+
+All user-visible text in the WeChat mini-program must go through `miniprogram/i18n/`. Do not hardcode copy in wxml, page js toasts/modals, tab labels, or navigation titles.
+
+## Required pattern
+
+1. Add keys to **all** locale files under `miniprogram/i18n/locales/` (`zh-Hans`, `zh-Hant`, `en`, `ja`, `ko`).
+2. In wxml use `{{t.section.key}}` (page must set `t: getI18nData()` and refresh via `onLocaleChange`).
+3. In js use `t("section.key")` for `wx.showToast` / `wx.showModal` / `wx.setNavigationBarTitle` / loading titles.
+4. Tab bar labels use `t("tab.*")` in `custom-tab-bar`.
+
+```xml
+<!-- ❌ BAD -->
+<view>点击登录</view>
+
+<!-- ✅ GOOD -->
+<view>{{t.profile.tapToLogin}}</view>
+```
+
+```js
+// ❌ BAD
+wx.showToast({ title: "已保存" });
+
+// ✅ GOOD
+wx.showToast({ title: t("common.saved") });
+```
+
+## New pages checklist
+
+- [ ] Register nav title key in `nav.*` and call `wx.setNavigationBarTitle({ title: t("nav.xxx") })` in `applyI18n` / `onShow`
+- [ ] Bind `t` + `onLocaleChange` (unsubscribe on `onUnload`)
+- [ ] No literal Chinese/English/Japanese/Korean UI strings in wxml
+- [ ] Every new string exists in all 5 locale packs
+
+Language picker labels (`简体中文` / `繁体中文` / `English` / `日语` / `韩语`) stay fixed as product labels; do not translate those option names.

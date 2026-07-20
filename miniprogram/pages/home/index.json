@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "首页"
+  "usingComponents": {
+    "post-waterfall": "/components/post-waterfall/index"
+  },
+  "navigationStyle": "custom"
 }

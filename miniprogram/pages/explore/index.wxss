@@ -1,1 +1,12 @@
-/* explore */
+.explore-page {
+  height: 100vh;
+  background: #f3f6f2;
+  box-sizing: border-box;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+}
+
+.explore-scroll {
+  height: 100%;
+  padding: 16rpx 12rpx 0;
+  box-sizing: border-box;
+}

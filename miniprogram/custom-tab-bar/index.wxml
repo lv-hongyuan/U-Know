@@ -1,4 +1,4 @@
-<view class="tab-bar">
+<view class="tab-bar" wx:if="{{!hidden}}">
   <view
     class="tab-item {{item.isPublish ? 'tab-item--publish' : ''}}"
     wx:for="{{list}}"
@@ -27,5 +27,20 @@
         <text class="tab-label {{selected === index ? 'tab-label--active' : ''}}">{{item.text}}</text>
       </view>
     </block>
+  </view>
+</view>
+
+<view
+  class="publish-sheet-mask"
+  wx:if="{{showPublishSheet}}"
+  catchtouchmove="noop"
+  bindtap="onClosePublishSheet"
+>
+  <view class="publish-sheet" catchtap="noop">
+    <view class="publish-sheet-title">{{t.publish.sheetTitle}}</view>
+    <view class="publish-sheet-item" bindtap="onPickAlbum">{{t.publish.fromAlbum}}</view>
+    <view class="publish-sheet-item" bindtap="onPickCamera">{{t.publish.fromCamera}}</view>
+    <view class="publish-sheet-item publish-sheet-item--last" bindtap="onPickText">{{t.publish.textOnly}}</view>
+    <view class="publish-sheet-cancel" bindtap="onClosePublishSheet">{{t.common.cancel}}</view>
   </view>
 </view>

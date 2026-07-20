@@ -1,24 +1,35 @@
 const {
   getLocalUser,
   setLocalUser,
-  clearLocalUser,
+  logout,
   isLoggedIn,
   displayNickName,
   displayAvatar,
   normalizeUser,
   DEFAULT_AVATAR,
-  DEFAULT_NICK_NAME,
+  defaultNickName,
   BIO_MAX_LENGTH,
 } = require("../../utils/user");
+const {
+  getI18nData,
+  t,
+  onLocaleChange,
+  getLocale,
+  setLocale,
+  applyUserLocale,
+  getLocaleOptions,
+  getLocaleLabel,
+} = require("../../i18n/index");
 
-const GENDER_LABELS = {
-  male: "男",
-  female: "女",
-  secret: "保密",
-};
+function genderLabelOf(gender) {
+  if (gender === "male") return t("edit.male");
+  if (gender === "female") return t("edit.female");
+  return t("edit.secret");
+}
 
 Page({
   data: {
+    t: getI18nData(),
     avatarUrl: DEFAULT_AVATAR,
     nickName: "",
     phoneNumber: "",
@@ -27,16 +38,20 @@ Page({
     bioMax: BIO_MAX_LENGTH,
     bioFocused: false,
     gender: "secret",
-    genderLabel: "保密",
+    genderLabel: "",
     draftGender: "secret",
     birthday: "",
     birthdayEnd: "",
     hometown: "",
     regionValue: [],
+    locale: getLocale(),
+    localeLabel: getLocaleLabel(getLocale()),
+    localeOptions: getLocaleOptions(),
     showAvatarSheet: false,
     showAvatarPreview: false,
     showPhoneSheet: false,
     showGenderSheet: false,
+    showLocaleSheet: false,
     showLogoutConfirm: false,
     saving: false,
   },
@@ -52,10 +67,20 @@ Page({
     const y = now.getFullYear();
     const m = `${now.getMonth() + 1}`.padStart(2, "0");
     const d = `${now.getDate()}`.padStart(2, "0");
-    this.setData({ birthdayEnd: `${y}-${m}-${d}` });
+    this.setData({
+      birthdayEnd: `${y}-${m}-${d}`,
+      genderLabel: genderLabelOf("secret"),
+    });
+    this._offLocale = onLocaleChange(() => this.applyI18n());
+  },
+
+  onUnload() {
+    if (this._offLocale) this._offLocale();
+    if (this.bioBlurTimer) clearTimeout(this.bioBlurTimer);
   },
 
   onShow() {
+    this.applyI18n();
     const user = getLocalUser();
     if (!isLoggedIn(user)) {
       wx.navigateBack({ fail: () => wx.switchTab({ url: "/pages/profile/index" }) });
@@ -65,12 +90,26 @@ Page({
     this.refreshFromCloud();
   },
 
+  applyI18n() {
+    const locale = getLocale();
+    this.setData({
+      t: getI18nData(),
+      locale,
+      localeLabel: getLocaleLabel(locale),
+      localeOptions: getLocaleOptions(),
+      genderLabel: genderLabelOf(this.data.gender || "secret"),
+    });
+    wx.setNavigationBarTitle({ title: t("nav.editProfile") });
+  },
+
   applyLocalUser(raw) {
     const user = normalizeUser(raw);
     if (!user) return;
 
+    applyUserLocale(user);
+
     const nickName =
-      displayNickName(user) === DEFAULT_NICK_NAME ? "" : displayNickName(user);
+      displayNickName(user) === defaultNickName() ? "" : displayNickName(user);
     this.originalNickName = nickName;
     this.originalBio = user.bio || "";
 
@@ -87,7 +126,7 @@ Page({
       bioCount: (user.bio || "").length,
       bioFocused: false,
       gender: user.gender || "secret",
-      genderLabel: GENDER_LABELS[user.gender] || "保密",
+      genderLabel: genderLabelOf(user.gender || "secret"),
       birthday: user.birthday || "",
       hometown: user.hometown || "",
       regionValue,
@@ -95,6 +134,7 @@ Page({
   },
 
   async refreshFromCloud() {
+    if (!isLoggedIn()) return;
     try {
       const res = await wx.cloud.callFunction({
         name: "login",
@@ -118,7 +158,7 @@ Page({
   onPreviewAvatar() {
     const url = this.data.avatarUrl;
     if (!url || url === DEFAULT_AVATAR) {
-      wx.showToast({ title: "暂无头像可预览", icon: "none" });
+      wx.showToast({ title: t("edit.noAvatarPreview"), icon: "none" });
       return;
     }
     this.setData({ showAvatarPreview: true });
@@ -131,11 +171,11 @@ Page({
   async onSaveAvatarToAlbum() {
     const url = this.data.avatarUrl;
     if (!url || url === DEFAULT_AVATAR) {
-      wx.showToast({ title: "暂无头像可保存", icon: "none" });
+      wx.showToast({ title: t("edit.noAvatarSave"), icon: "none" });
       return;
     }
 
-    wx.showLoading({ title: "保存中", mask: true });
+    wx.showLoading({ title: t("common.saving"), mask: true });
     try {
       let filePath = url;
       if (url.indexOf("cloud://") === 0) {
@@ -148,20 +188,20 @@ Page({
       }
 
       await this.saveImageWithAuth(filePath);
-      wx.showToast({ title: "已保存到相册", icon: "success" });
+      wx.showToast({ title: t("edit.savedToAlbum"), icon: "success" });
     } catch (err) {
       console.error("save avatar failed", err);
       if (err && (err.errMsg || "").indexOf("auth deny") > -1) {
         wx.showModal({
-          title: "需要相册权限",
-          content: "请在设置中允许保存到相册",
-          confirmText: "去设置",
+          title: t("edit.albumAuthTitle"),
+          content: t("edit.albumAuthContent"),
+          confirmText: t("edit.goSettings"),
           success: (res) => {
             if (res.confirm) wx.openSetting({});
           },
         });
       } else {
-        wx.showToast({ title: "保存失败", icon: "none" });
+        wx.showToast({ title: t("common.saveFailed"), icon: "none" });
       }
     } finally {
       wx.hideLoading();
@@ -206,92 +246,86 @@ Page({
     this.setData({ showAvatarSheet: false });
   },
 
-  /** 微信原生 1:1 裁剪，体验接近系统改头像 */
-  cropAvatarToSquare(src) {
-    return new Promise((resolve, reject) => {
-      if (!src) {
-        reject(new Error("empty image"));
-        return;
-      }
-      if (typeof wx.cropImage !== "function") {
-        // 低版本基础库兜底：不裁剪直接用原图
-        resolve(src);
-        return;
-      }
-      wx.cropImage({
-        src,
-        cropScale: "1:1",
-        success: (res) => {
-          if (res && res.tempFilePath) {
-            resolve(res.tempFilePath);
-            return;
-          }
-          reject(new Error("crop empty"));
-        },
-        fail: (err) => {
-          const msg = (err && err.errMsg) || "";
-          if (msg.indexOf("cancel") > -1) {
-            reject({ canceled: true, errMsg: msg });
-            return;
-          }
-          reject(err || new Error("crop failed"));
-        },
-      });
-    });
-  },
+  /**
+   * 选图后立刻调起微信原生 1:1 裁剪（需在用户手势/选图 success 同步链路中调用）
+   * 确认裁剪后再上传；取消裁剪则不上传
+   */
+  openCropThenUpload(src) {
+    if (!src) return;
 
-  async pickAndCropAvatar(src) {
-    try {
-      const cropped = await this.cropAvatarToSquare(src);
-      await this.uploadAndSaveAvatar(cropped);
-    } catch (e) {
-      if (e && e.canceled) return;
-      console.error("crop avatar failed", e);
-      wx.showToast({ title: "裁剪失败", icon: "none" });
+    if (typeof wx.cropImage !== "function") {
+      wx.showModal({
+        title: t("edit.cropUnsupportedTitle"),
+        content: t("edit.cropUnsupportedContent"),
+        showCancel: false,
+      });
+      return;
     }
+
+    wx.cropImage({
+      src,
+      cropScale: "1:1",
+      success: (res) => {
+        const path = res && res.tempFilePath;
+        if (!path) {
+          wx.showToast({ title: t("edit.cropFailed"), icon: "none" });
+          return;
+        }
+        this.uploadAndSaveAvatar(path);
+      },
+      fail: (err) => {
+        const msg = (err && err.errMsg) || "";
+        if (msg.indexOf("cancel") > -1) return;
+        console.error("cropImage fail", err);
+        wx.showToast({ title: t("edit.cropRequired"), icon: "none" });
+      },
+    });
   },
 
   onChooseWechatAvatar(e) {
     const { avatarUrl } = e.detail || {};
-    this.setData({ showAvatarSheet: false });
     if (!avatarUrl) return;
-    this.pickAndCropAvatar(avatarUrl);
+    // 先同步调起裁剪，再关弹层，避免打断手势链路
+    this.openCropThenUpload(avatarUrl);
+    this.setData({ showAvatarSheet: false });
   },
 
-  async onPickCamera() {
+  onPickCamera() {
     this.setData({ showAvatarSheet: false });
-    try {
-      const res = await wx.chooseMedia({
-        count: 1,
-        mediaType: ["image"],
-        sourceType: ["camera"],
-        sizeType: ["compressed"],
-      });
-      const file = res.tempFiles && res.tempFiles[0];
-      if (!file || !file.tempFilePath) return;
-      await this.pickAndCropAvatar(file.tempFilePath);
-    } catch (e) {
-      if (e && e.errMsg && e.errMsg.includes("cancel")) return;
-      wx.showToast({ title: "拍摄失败", icon: "none" });
-    }
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ["image"],
+      sourceType: ["camera"],
+      sizeType: ["original", "compressed"],
+      success: (res) => {
+        const file = res.tempFiles && res.tempFiles[0];
+        if (!file || !file.tempFilePath) return;
+        this.openCropThenUpload(file.tempFilePath);
+      },
+      fail: (e) => {
+        if (e && e.errMsg && e.errMsg.includes("cancel")) return;
+        wx.showToast({ title: t("edit.cameraFailed"), icon: "none" });
+      },
+    });
   },
 
-  async onPickAlbum() {
+  onPickAlbum() {
     this.setData({ showAvatarSheet: false });
-    try {
-      const res = await wx.chooseMedia({
-        count: 1,
-        mediaType: ["image"],
-        sourceType: ["album"],
-        sizeType: ["compressed"],
-      });
-      const file = res.tempFiles && res.tempFiles[0];
-      if (!file || !file.tempFilePath) return;
-      await this.pickAndCropAvatar(file.tempFilePath);
-    } catch (e) {
-      if (e && e.errMsg && e.errMsg.includes("cancel")) return;
-      wx.showToast({ title: "选择失败", icon: "none" });
-    }
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ["image"],
+      sourceType: ["album"],
+      sizeType: ["original", "compressed"],
+      success: (res) => {
+        const file = res.tempFiles && res.tempFiles[0];
+        if (!file || !file.tempFilePath) return;
+        this.openCropThenUpload(file.tempFilePath);
+      },
+      fail: (e) => {
+        if (e && e.errMsg && e.errMsg.includes("cancel")) return;
+        wx.showToast({ title: t("edit.pickFailed"), icon: "none" });
+      },
+    });
   },
 
   onNickInput(e) {
@@ -301,7 +335,7 @@ Page({
   async uploadAndSaveAvatar(filePath) {
     if (this.data.saving) return;
     this.setData({ saving: true });
-    wx.showLoading({ title: "上传中", mask: true });
+    wx.showLoading({ title: t("common.uploading"), mask: true });
 
     try {
       const uploadRes = await wx.cloud.uploadFile({
@@ -313,11 +347,11 @@ Page({
         avatarUrl: displayAvatar(result),
         saving: false,
       });
-      wx.showToast({ title: "头像已更新", icon: "success" });
+      wx.showToast({ title: t("edit.avatarUpdated"), icon: "success" });
     } catch (err) {
       console.error("upload avatar failed", err);
       this.setData({ saving: false });
-      this.handleSaveError(err, "头像更新失败");
+      this.handleSaveError(err, t("edit.avatarUpdateFailed"));
     } finally {
       wx.hideLoading();
     }
@@ -328,21 +362,23 @@ Page({
     const nickName = (this.data.nickName || "").trim();
     if (nickName === this.originalNickName) return;
     if (!nickName) {
-      wx.showToast({ title: "请输入昵称", icon: "none" });
+      wx.showToast({ title: t("edit.enterNickName"), icon: "none" });
       return;
     }
 
     this.setData({ saving: true });
-    wx.showLoading({ title: "保存中", mask: true });
+    wx.showLoading({ title: t("common.saving"), mask: true });
     try {
       const result = await this.updateProfile({ nickName });
       this.originalNickName =
-        displayNickName(result) === DEFAULT_NICK_NAME ? "" : displayNickName(result);
+        displayNickName(result) === defaultNickName()
+          ? ""
+          : displayNickName(result);
       this.setData({ nickName: this.originalNickName, saving: false });
-      wx.showToast({ title: "已保存", icon: "success" });
+      wx.showToast({ title: t("common.saved"), icon: "success" });
     } catch (err) {
       this.setData({ saving: false });
-      this.handleSaveError(err, "保存失败");
+      this.handleSaveError(err, t("common.saveFailed"));
     } finally {
       wx.hideLoading();
     }
@@ -362,14 +398,17 @@ Page({
     const { code, errMsg } = e.detail || {};
     if (!code) {
       wx.showToast({
-        title: errMsg && errMsg.indexOf("deny") > -1 ? "需要授权手机号" : "授权失败",
+        title:
+          errMsg && errMsg.indexOf("deny") > -1
+            ? t("profile.needPhoneAuth")
+            : t("profile.authFailed"),
         icon: "none",
       });
       return;
     }
 
     this.setData({ saving: true });
-    wx.showLoading({ title: "更换中", mask: true });
+    wx.showLoading({ title: t("edit.changing"), mask: true });
     try {
       const res = await wx.cloud.callFunction({
         name: "login",
@@ -377,7 +416,9 @@ Page({
       });
       const result = res.result || {};
       if (!result.ok || !result.user) {
-        throw new Error(result.message || result.error || "更换失败");
+        throw new Error(
+          result.message || result.error || t("edit.changeFailed")
+        );
       }
       const user = normalizeUser(result.user);
       setLocalUser(user);
@@ -386,11 +427,11 @@ Page({
         showPhoneSheet: false,
         saving: false,
       });
-      wx.showToast({ title: "手机号已更新", icon: "success" });
+      wx.showToast({ title: t("edit.phoneUpdated"), icon: "success" });
     } catch (err) {
       console.error("change phone failed", err);
       this.setData({ saving: false });
-      this.handleSaveError(err, "更换失败");
+      this.handleSaveError(err, t("edit.changeFailed"));
     } finally {
       wx.hideLoading();
     }
@@ -436,7 +477,7 @@ Page({
     }
 
     this.setData({ saving: true });
-    wx.showLoading({ title: "保存中", mask: true });
+    wx.showLoading({ title: t("common.saving"), mask: true });
     try {
       const result = await this.updateProfile({ bio });
       this.originalBio = result.bio || "";
@@ -446,10 +487,10 @@ Page({
         bioFocused: false,
         saving: false,
       });
-      wx.showToast({ title: "已保存", icon: "success" });
+      wx.showToast({ title: t("common.saved"), icon: "success" });
     } catch (err) {
       this.setData({ saving: false });
-      this.handleSaveError(err, "保存失败");
+      this.handleSaveError(err, t("common.saveFailed"));
     } finally {
       wx.hideLoading();
     }
@@ -481,22 +522,61 @@ Page({
     }
 
     this.setData({ saving: true });
-    wx.showLoading({ title: "保存中", mask: true });
+    wx.showLoading({ title: t("common.saving"), mask: true });
     try {
       await this.updateProfile({ gender });
       this.setData({
         gender,
-        genderLabel: GENDER_LABELS[gender] || "保密",
+        genderLabel: genderLabelOf(gender),
         showGenderSheet: false,
         saving: false,
       });
-      wx.showToast({ title: "已保存", icon: "success" });
+      wx.showToast({ title: t("common.saved"), icon: "success" });
     } catch (err) {
       this.setData({ saving: false });
-      this.handleSaveError(err, "保存失败");
+      this.handleSaveError(err, t("common.saveFailed"));
     } finally {
       wx.hideLoading();
     }
+  },
+
+  onTapLocale() {
+    this.setData({ showLocaleSheet: true });
+  },
+
+  onCloseLocaleSheet() {
+    this.setData({ showLocaleSheet: false });
+  },
+
+  onPickLocale(e) {
+    const code = e.currentTarget.dataset.code;
+    if (!code) return;
+    if (code === this.data.locale) {
+      this.setData({ showLocaleSheet: false });
+      return;
+    }
+
+    const prev = this.data.locale;
+    setLocale(code);
+    this.setData({ showLocaleSheet: false });
+
+    // 编辑页仅登录可进；仍按登录态决定是否写用户表
+    if (!isLoggedIn()) {
+      wx.showToast({ title: t("common.saved"), icon: "success" });
+      return;
+    }
+
+    this.setData({ saving: true });
+    this.updateProfile({ locale: code })
+      .then(() => {
+        this.setData({ saving: false });
+        wx.showToast({ title: t("common.saved"), icon: "success" });
+      })
+      .catch((err) => {
+        setLocale(prev);
+        this.setData({ saving: false });
+        this.handleSaveError(err, t("common.saveFailed"));
+      });
   },
 
   async onBirthdayChange(e) {
@@ -507,10 +587,10 @@ Page({
     try {
       await this.updateProfile({ birthday });
       this.setData({ saving: false });
-      wx.showToast({ title: "已保存", icon: "success" });
+      wx.showToast({ title: t("common.saved"), icon: "success" });
     } catch (err) {
       this.setData({ birthday: prev, saving: false });
-      this.handleSaveError(err, "保存失败");
+      this.handleSaveError(err, t("common.saveFailed"));
     }
   },
 
@@ -541,14 +621,14 @@ Page({
         hometownCity: city,
       });
       this.setData({ saving: false });
-      wx.showToast({ title: "已保存", icon: "success" });
+      wx.showToast({ title: t("common.saved"), icon: "success" });
     } catch (err) {
       this.setData({
         hometown: prev.hometown,
         regionValue: prev.regionValue,
         saving: false,
       });
-      this.handleSaveError(err, "保存失败");
+      this.handleSaveError(err, t("common.saveFailed"));
     }
   },
 
@@ -561,14 +641,10 @@ Page({
   },
 
   onConfirmLogout() {
-    clearLocalUser();
+    logout();
     this.setData({ showLogoutConfirm: false });
-    wx.showToast({ title: "已退出登录", icon: "none" });
-    setTimeout(() => {
-      wx.navigateBack({
-        fail: () => wx.switchTab({ url: "/pages/profile/index" }),
-      });
-    }, 400);
+    wx.showToast({ title: t("edit.loggedOut"), icon: "none" });
+    wx.switchTab({ url: "/pages/profile/index" });
   },
 
   async updateProfile(patch) {
@@ -581,7 +657,7 @@ Page({
     });
     const result = res.result || {};
     if (!result.ok || !result.user) {
-      throw new Error(result.message || result.error || "保存失败");
+      throw new Error(result.message || result.error || t("common.saveFailed"));
     }
     const user = normalizeUser(result.user);
     setLocalUser(user);
@@ -592,12 +668,15 @@ Page({
     const msg = (err && err.message) || "";
     if (msg.includes("UNKNOWN_TYPE")) {
       wx.showModal({
-        title: "云函数未更新",
-        content: "请右键 cloudfunctions/login → 上传并部署：云端安装依赖后再试。",
+        title: t("edit.cloudOutdatedTitle"),
+        content: t("edit.cloudOutdatedContent"),
         showCancel: false,
       });
       return;
     }
-    wx.showToast({ title: fallback || "操作失败", icon: "none" });
+    wx.showToast({
+      title: fallback || t("common.operationFailed"),
+      icon: "none",
+    });
   },
 });

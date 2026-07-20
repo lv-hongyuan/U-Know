@@ -1,0 +1,112 @@
+<view class="page detail-page" wx:if="{{post}}">
+  <scroll-view
+    class="detail-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    bindscrolltolower="onLoadMoreComments"
+    lower-threshold="80"
+  >
+    <view class="detail-author">
+      <image class="detail-avatar" src="{{post.avatarUrl || defaultAvatar}}" mode="aspectFill" />
+      <text class="detail-nick">{{post.nickName}}</text>
+      <view class="detail-menu" wx:if="{{isOwner}}" bindtap="onTapMenu">
+        <image class="detail-menu-icon" src="/images/more.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <swiper
+      wx:if="{{post.type === 'image' && post.images.length}}"
+      class="detail-swiper"
+      style="height: {{swiperHeight}}px;"
+      indicator-dots="{{post.images.length > 1}}"
+      indicator-color="rgba(15,31,22,0.2)"
+      indicator-active-color="#028527"
+      bindchange="onSwiperChange"
+    >
+      <swiper-item wx:for="{{post.images}}" wx:key="*this">
+        <image
+          class="detail-image"
+          src="{{item}}"
+          mode="aspectFit"
+          bindtap="onPreviewImage"
+          data-url="{{item}}"
+        />
+      </swiper-item>
+    </swiper>
+
+    <view wx:elif="{{post.type === 'text'}}" class="detail-text-cover">
+      <text class="detail-text-cover-title">{{post.title}}</text>
+    </view>
+
+    <view class="detail-body">
+      <view class="detail-title">{{post.title}}</view>
+      <view class="detail-content">{{post.content}}</view>
+      <view class="detail-topics" wx:if="{{post.topics.length}}">
+        <text class="detail-topic" wx:for="{{post.topics}}" wx:key="*this">#{{item}}</text>
+      </view>
+      <view class="detail-views">
+        <image class="detail-views-icon" src="/images/eye.svg" mode="aspectFit" />
+        <text>{{post.viewCount || 0}} {{t.post.views}}</text>
+      </view>
+    </view>
+
+    <view class="detail-comments-head">
+      <text class="detail-comments-title">{{t.post.comments}}</text>
+      <text class="detail-comments-count">{{post.commentCount || 0}}</text>
+    </view>
+
+    <view class="detail-comment" wx:for="{{comments}}" wx:key="_id">
+      <image class="detail-comment-avatar" src="{{item.avatarUrl || defaultAvatar}}" mode="aspectFill" />
+      <view class="detail-comment-main">
+        <text class="detail-comment-nick">{{item.nickName}}</text>
+        <text class="detail-comment-text">{{item.content}}</text>
+      </view>
+    </view>
+
+    <view class="detail-empty" wx:if="{{!commentsLoading && !comments.length}}">{{t.post.noComments}}</view>
+    <view class="detail-status" wx:if="{{commentsLoading}}">{{t.common.loading}}</view>
+    <view class="detail-status" wx:elif="{{!commentsHasMore && comments.length}}">{{t.feed.noMore}}</view>
+    <view class="detail-scroll-pad"></view>
+  </scroll-view>
+
+  <view class="detail-footer">
+    <view class="detail-action" bindtap="onToggleLike">
+      <image
+        class="detail-action-icon"
+        src="{{liked ? '/images/heart.svg' : '/images/heart-outline.svg'}}"
+        mode="aspectFit"
+      />
+      <text class="detail-action-num">{{post.likeCount || 0}}</text>
+    </view>
+    <view class="detail-action" bindtap="onToggleCollect">
+      <image
+        class="detail-action-icon"
+        src="{{collected ? '/images/collect-filled.svg' : '/images/collect.svg'}}"
+        mode="aspectFit"
+      />
+      <text class="detail-action-num">{{post.collectCount || 0}}</text>
+    </view>
+    <view class="detail-input-wrap">
+      <input
+        class="detail-input"
+        maxlength="{{commentMax}}"
+        placeholder="{{t.post.commentPlaceholder}}"
+        value="{{commentDraft}}"
+        confirm-type="send"
+        bindinput="onCommentInput"
+        bindconfirm="onSendComment"
+        focus="{{commentFocus}}"
+        bindfocus="onCommentFocus"
+        bindblur="onCommentBlur"
+      />
+      <view class="detail-send {{canSend ? 'detail-send--on' : ''}}" bindtap="onSendComment">
+        <image class="detail-send-icon" src="/images/send.svg" mode="aspectFit" />
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="page detail-page detail-page--loading" wx:elif="{{loading}}">
+  <text class="detail-status">{{t.common.loading}}</text>
+</view>

@@ -1,0 +1,15 @@
+<view class="page edit-media-page">
+  <view class="edit-media-preview">
+    <image class="edit-media-img" src="{{imagePath}}" mode="aspectFit" />
+  </view>
+
+  <view class="edit-media-tools">
+    <view class="edit-media-tabs">
+      <view class="edit-media-tab edit-media-tab--active">{{t.publish.toolCrop}}</view>
+    </view>
+    <view class="edit-media-actions">
+      <view class="edit-media-btn edit-media-btn--ghost" bindtap="onTapCrop">{{t.publish.toolCrop}}</view>
+      <view class="edit-media-btn" bindtap="onTapNext">{{t.publish.next}}</view>
+    </view>
+  </view>
+</view>

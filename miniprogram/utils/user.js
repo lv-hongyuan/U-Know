@@ -1,7 +1,13 @@
+const { t, setLocale, DEFAULT_LOCALE } = require("../i18n/index");
+
 const USER_KEY = "uknow_user";
 const DEFAULT_NICK_NAME = "微信用户";
 const DEFAULT_AVATAR = "/images/default-avatar.svg";
 const BIO_MAX_LENGTH = 60; // 约 20 字/行 × 3 行
+
+function defaultNickName() {
+  return t("common.wechatUser");
+}
 
 function getLocalUser() {
   try {
@@ -27,12 +33,21 @@ function clearLocalUser() {
   setLocalUser(null);
 }
 
+function logout() {
+  clearLocalUser();
+  setLocale(DEFAULT_LOCALE);
+}
+
 function isLoggedIn(user = getLocalUser()) {
   return !!(user && user.phoneNumber);
 }
 
 function displayNickName(user) {
-  return (user && user.nickName) || DEFAULT_NICK_NAME;
+  const nick = user && user.nickName;
+  if (!nick || nick === DEFAULT_NICK_NAME || nick === "微信用户") {
+    return defaultNickName();
+  }
+  return nick;
 }
 
 function displayAvatar(user) {
@@ -43,7 +58,7 @@ function normalizeUser(user) {
   if (!user || !user.phoneNumber) return null;
   return {
     openid: user.openid || "",
-    nickName: user.nickName || DEFAULT_NICK_NAME,
+    nickName: user.nickName || defaultNickName(),
     avatarUrl: user.avatarUrl || "",
     phoneNumber: user.phoneNumber,
     bio: user.bio || "",
@@ -52,6 +67,10 @@ function normalizeUser(user) {
     hometown: user.hometown || "",
     hometownProvince: user.hometownProvince || "",
     hometownCity: user.hometownCity || "",
+    locale: user.locale || "",
+    followerCount: Number(user.followerCount) || 0,
+    followingCount: Number(user.followingCount) || 0,
+    likeCollectCount: Number(user.likeCollectCount) || 0,
   };
 }
 
@@ -60,9 +79,11 @@ module.exports = {
   DEFAULT_NICK_NAME,
   DEFAULT_AVATAR,
   BIO_MAX_LENGTH,
+  defaultNickName,
   getLocalUser,
   setLocalUser,
   clearLocalUser,
+  logout,
   isLoggedIn,
   displayNickName,
   displayAvatar,

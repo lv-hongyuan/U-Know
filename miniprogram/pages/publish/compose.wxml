@@ -1,0 +1,90 @@
+<view class="page compose-page">
+  <view class="compose-body">
+    <view class="compose-images" wx:if="{{mode === 'image'}}">
+      <view class="compose-image-item" wx:for="{{images}}" wx:key="*this">
+        <image class="compose-image" src="{{item}}" mode="aspectFill" />
+        <view class="compose-image-del" data-index="{{index}}" bindtap="onRemoveImage">×</view>
+      </view>
+      <view class="compose-image-add" wx:if="{{images.length < imageMax}}" bindtap="onAddImage">
+        <text class="compose-image-add-plus">+</text>
+        <text class="compose-image-add-text">{{t.publish.addImage}}</text>
+      </view>
+    </view>
+
+    <view class="compose-title-row">
+      <input
+        class="compose-title"
+        maxlength="{{titleMax}}"
+        placeholder="{{t.publish.titlePlaceholder}}"
+        value="{{title}}"
+        bindinput="onTitleInput"
+      />
+      <text class="compose-count compose-title-count">{{title.length}}/{{titleMax}}</text>
+    </view>
+
+    <textarea
+      class="compose-content"
+      maxlength="{{contentMax}}"
+      placeholder="{{t.publish.contentPlaceholder}}"
+      value="{{content}}"
+      bindinput="onContentInput"
+      auto-height
+      show-confirm-bar="{{false}}"
+    />
+    <view class="compose-meta-row">
+      <view class="compose-topic-btn" bindtap="onAddTopic">{{t.publish.addTopic}}</view>
+      <view class="compose-count">{{content.length}}/{{contentMax}}</view>
+    </view>
+
+    <view class="compose-topics" wx:if="{{topics.length}}">
+      <view class="compose-topic-chip" wx:for="{{topics}}" wx:key="*this">#{{item}}</view>
+    </view>
+
+    <view class="compose-field" bindtap="onOpenVisibilitySheet">
+      <text class="compose-field-label">{{t.publish.visibility}}</text>
+      <view class="compose-field-right">
+        <text class="compose-field-value">{{visibility === 'private' ? t.publish.visibilityPrivate : t.publish.visibilityPublic}}</text>
+        <text class="compose-field-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="compose-footer">
+    <view class="compose-btn compose-btn--ghost" wx:if="{{!isEdit}}" bindtap="onSaveDraft">{{t.publish.saveDraft}}</view>
+    <view class="compose-btn" bindtap="onPublish">{{isEdit ? t.publish.saveUpdate : t.publish.publish}}</view>
+  </view>
+
+  <view class="sheet-mask" wx:if="{{showVisibilitySheet}}" catchtouchmove="noop" bindtap="onCloseVisibilitySheet">
+    <view class="sheet" catchtap="noop">
+      <view class="vis-sheet">
+        <view class="vis-sheet-head">
+          <view class="vis-sheet-cancel" bindtap="onCloseVisibilitySheet">{{t.common.cancel}}</view>
+          <view class="vis-sheet-title">{{t.publish.selectVisibility}}</view>
+          <view class="vis-sheet-spacer"></view>
+        </view>
+        <view
+          class="vis-sheet-item {{visibility === 'public' ? 'vis-sheet-item--active' : ''}}"
+          data-visibility="public"
+          bindtap="onPickVisibility"
+        >
+          <view class="vis-sheet-item-main">
+            <text class="vis-sheet-item-label">{{t.publish.visibilityPublic}}</text>
+            <text class="vis-sheet-item-desc">{{t.publish.visibilityPublicDesc}}</text>
+          </view>
+          <view class="vis-check" wx:if="{{visibility === 'public'}}"></view>
+        </view>
+        <view
+          class="vis-sheet-item vis-sheet-item--last {{visibility === 'private' ? 'vis-sheet-item--active' : ''}}"
+          data-visibility="private"
+          bindtap="onPickVisibility"
+        >
+          <view class="vis-sheet-item-main">
+            <text class="vis-sheet-item-label">{{t.publish.visibilityPrivate}}</text>
+            <text class="vis-sheet-item-desc">{{t.publish.visibilityPrivateDesc}}</text>
+          </view>
+          <view class="vis-check" wx:if="{{visibility === 'private'}}"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

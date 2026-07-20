@@ -1,3 +1,23 @@
-<view class="page">
-  <view class="page-blank">待定</view>
+<view class="page explore-page">
+  <scroll-view
+    class="explore-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
+    bindscrolltolower="onLoadMore"
+    lower-threshold="120"
+  >
+    <post-waterfall
+      list="{{list}}"
+      loading="{{loading}}"
+      hasMore="{{hasMore}}"
+      emptyText="{{t.feed.emptyPlaza}}"
+      loadingText="{{t.common.loading}}"
+      noMoreText="{{t.feed.noMore}}"
+      bind:itemtap="onTapPost"
+    />
+  </scroll-view>
 </view>

@@ -2,7 +2,7 @@
   <!-- 头像昵称手机号 -->
   <view class="edit-card">
     <view class="edit-row edit-row--avatar" bindtap="onTapAvatar">
-      <view class="edit-label">头像</view>
+      <view class="edit-label">{{t.edit.avatar}}</view>
       <view class="edit-right">
         <image
           class="edit-avatar"
@@ -17,12 +17,12 @@
     <view class="edit-line"></view>
 
     <view class="edit-row">
-      <view class="edit-label">昵称</view>
+      <view class="edit-label">{{t.edit.nickName}}</view>
       <input
         class="edit-input"
         type="nickname"
         maxlength="20"
-        placeholder="请输入昵称"
+        placeholder="{{t.edit.nickPlaceholder}}"
         value="{{nickName}}"
         bindinput="onNickInput"
         bindblur="onSaveNickName"
@@ -34,27 +34,27 @@
     <view class="edit-line"></view>
 
     <view class="edit-row" bindtap="onTapPhone">
-      <view class="edit-label">手机号</view>
+      <view class="edit-label">{{t.edit.phone}}</view>
       <view class="edit-right">
-        <text class="edit-value">{{phoneNumber || '未绑定'}}</text>
+        <text class="edit-value">{{phoneNumber || t.edit.unbound}}</text>
         <view class="edit-arrow"></view>
       </view>
     </view>
   </view>
 
   <!-- 个人信息 -->
-  <view class="section-title">个人信息</view>
+  <view class="section-title">{{t.edit.personalInfo}}</view>
   <view class="edit-card">
     <view class="edit-block">
       <view class="edit-block-head">
-        <view class="edit-label">简介</view>
+        <view class="edit-label">{{t.edit.bio}}</view>
         <view class="edit-count">{{bioCount}}/{{bioMax}}</view>
       </view>
       <view class="bio-wrap">
         <textarea
           class="edit-bio"
           maxlength="{{bioMax}}"
-          placeholder="介绍一下自己吧"
+          placeholder="{{t.edit.bioPlaceholder}}"
           value="{{bio}}"
           auto-height
           bindinput="onBioInput"
@@ -64,14 +64,14 @@
         <view
           class="bio-save {{bioFocused ? 'bio-save--show' : ''}}"
           catchtap="onSaveBio"
-        >保存</view>
+        >{{t.common.save}}</view>
       </view>
     </view>
 
     <view class="edit-line edit-line--full"></view>
 
     <view class="edit-row" bindtap="onTapGender">
-      <view class="edit-label">性别</view>
+      <view class="edit-label">{{t.edit.gender}}</view>
       <view class="edit-right">
         <view class="edit-value-icon">
           <image class="gender-icon" src="/images/gender/{{gender}}.svg" mode="aspectFit" />
@@ -83,61 +83,69 @@
 
     <view class="edit-line"></view>
 
-    <picker
-      mode="date"
-      value="{{birthday || birthdayEnd}}"
-      start="1900-01-01"
-      end="{{birthdayEnd}}"
-      bindchange="onBirthdayChange"
-    >
-      <view class="edit-row">
-        <view class="edit-label">生日</view>
+    <view class="edit-row">
+      <view class="edit-label">{{t.edit.birthday}}</view>
+      <picker
+        class="edit-picker"
+        mode="date"
+        value="{{birthday || birthdayEnd}}"
+        start="1900-01-01"
+        end="{{birthdayEnd}}"
+        bindchange="onBirthdayChange"
+      >
         <view class="edit-right">
-          <text class="edit-value {{birthday ? '' : 'edit-value--placeholder'}}">
-            {{birthday || '请选择'}}
-          </text>
+          <text class="edit-value {{birthday ? '' : 'edit-value--placeholder'}}">{{birthday || t.common.pleaseSelect}}</text>
           <view class="edit-arrow"></view>
         </view>
-      </view>
-    </picker>
+      </picker>
+    </view>
 
     <view class="edit-line"></view>
 
-    <picker
-      mode="region"
-      level="city"
-      value="{{regionValue}}"
-      bindchange="onHometownChange"
-    >
-      <view class="edit-row">
-        <view class="edit-label">家乡</view>
+    <view class="edit-row">
+      <view class="edit-label">{{t.edit.hometown}}</view>
+      <picker
+        class="edit-picker"
+        mode="region"
+        level="city"
+        value="{{regionValue}}"
+        bindchange="onHometownChange"
+      >
         <view class="edit-right">
-          <text class="edit-value {{hometown ? '' : 'edit-value--placeholder'}}">
-            {{hometown || '请选择省市'}}
-          </text>
+          <text class="edit-value {{hometown ? '' : 'edit-value--placeholder'}}">{{hometown || t.edit.selectRegion}}</text>
           <view class="edit-arrow"></view>
         </view>
+      </picker>
+    </view>
+
+    <view class="edit-line"></view>
+
+    <view class="edit-row" bindtap="onTapLocale">
+      <view class="edit-label">{{t.edit.language}}</view>
+      <view class="edit-right">
+        <text class="edit-value">{{localeLabel}}</text>
+        <view class="edit-arrow"></view>
       </view>
-    </picker>
+    </view>
   </view>
 
-  <view class="logout-btn" bindtap="onTapLogout">注销登录</view>
+  <view class="logout-btn" bindtap="onTapLogout">{{t.edit.logout}}</view>
 
   <!-- 更换头像 -->
   <view class="sheet-mask" wx:if="{{showAvatarSheet}}" catchtouchmove="noop" bindtap="onCloseAvatarSheet">
     <view class="sheet" catchtap="noop">
-      <view class="sheet-title">更换头像</view>
+      <view class="sheet-title">{{t.edit.changeAvatar}}</view>
       <view class="sheet-item sheet-item--action">
-        <text>使用微信头像</text>
+        <text>{{t.edit.useWechatAvatar}}</text>
         <button
           class="sheet-ghost-btn"
           open-type="chooseAvatar"
           bindchooseavatar="onChooseWechatAvatar"
         ></button>
       </view>
-      <view class="sheet-item" bindtap="onPickCamera">拍摄</view>
-      <view class="sheet-item sheet-item--last" bindtap="onPickAlbum">从相册选择</view>
-      <view class="sheet-cancel" bindtap="onCloseAvatarSheet">取消</view>
+      <view class="sheet-item" bindtap="onPickCamera">{{t.edit.takePhoto}}</view>
+      <view class="sheet-item sheet-item--last" bindtap="onPickAlbum">{{t.edit.chooseFromAlbum}}</view>
+      <view class="sheet-cancel" bindtap="onCloseAvatarSheet">{{t.common.cancel}}</view>
     </view>
   </view>
 
@@ -146,9 +154,9 @@
     <view class="sheet" catchtap="noop">
       <view class="gender-sheet">
         <view class="gender-sheet-head">
-          <view class="gender-sheet-cancel" bindtap="onCloseGenderSheet">取消</view>
-          <view class="gender-sheet-title">选择性别</view>
-          <view class="gender-sheet-save" bindtap="onSaveGender">保存</view>
+          <view class="gender-sheet-cancel" bindtap="onCloseGenderSheet">{{t.common.cancel}}</view>
+          <view class="gender-sheet-title">{{t.edit.selectGender}}</view>
+          <view class="gender-sheet-save" bindtap="onSaveGender">{{t.common.save}}</view>
         </view>
         <view
           class="gender-sheet-item {{draftGender === 'male' ? 'gender-sheet-item--active' : ''}}"
@@ -156,7 +164,7 @@
           bindtap="onPickGender"
         >
           <image class="gender-icon" src="/images/gender/male.svg" mode="aspectFit" />
-          <text>男</text>
+          <text>{{t.edit.male}}</text>
           <view class="gender-check" wx:if="{{draftGender === 'male'}}"></view>
         </view>
         <view
@@ -165,7 +173,7 @@
           bindtap="onPickGender"
         >
           <image class="gender-icon" src="/images/gender/female.svg" mode="aspectFit" />
-          <text>女</text>
+          <text>{{t.edit.female}}</text>
           <view class="gender-check" wx:if="{{draftGender === 'female'}}"></view>
         </view>
         <view
@@ -174,8 +182,31 @@
           bindtap="onPickGender"
         >
           <image class="gender-icon" src="/images/gender/secret.svg" mode="aspectFit" />
-          <text>保密</text>
+          <text>{{t.edit.secret}}</text>
           <view class="gender-check" wx:if="{{draftGender === 'secret'}}"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 选择语言 -->
+  <view class="sheet-mask" wx:if="{{showLocaleSheet}}" catchtouchmove="noop" bindtap="onCloseLocaleSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="gender-sheet">
+        <view class="gender-sheet-head">
+          <view class="gender-sheet-cancel" bindtap="onCloseLocaleSheet">{{t.common.cancel}}</view>
+          <view class="gender-sheet-title">{{t.edit.selectLanguage}}</view>
+          <view class="gender-sheet-save gender-sheet-save--ghost"></view>
+        </view>
+        <view
+          wx:for="{{localeOptions}}"
+          wx:key="code"
+          class="gender-sheet-item {{locale === item.code ? 'gender-sheet-item--active' : ''}} {{index === localeOptions.length - 1 ? 'gender-sheet-item--last' : ''}}"
+          data-code="{{item.code}}"
+          bindtap="onPickLocale"
+        >
+          <text>{{item.label}}</text>
+          <view class="gender-check" wx:if="{{locale === item.code}}"></view>
         </view>
       </view>
     </view>
@@ -186,8 +217,8 @@
     <view class="sheet" catchtap="noop">
       <view class="phone-sheet">
         <view class="login-handle"></view>
-        <view class="phone-sheet-title">更换手机号</view>
-        <view class="phone-sheet-desc">将获取你微信绑定的手机号</view>
+        <view class="phone-sheet-title">{{t.edit.changePhone}}</view>
+        <view class="phone-sheet-desc">{{t.edit.changePhoneDesc}}</view>
         <button
           class="phone-sheet-btn"
           open-type="getPhoneNumber"
@@ -195,30 +226,30 @@
           loading="{{saving}}"
           disabled="{{saving}}"
         >
-          授权微信手机号
+          {{t.edit.authorizeWechatPhone}}
         </button>
-        <view class="sheet-cancel sheet-cancel--inline" bindtap="onClosePhoneSheet">取消</view>
+        <view class="sheet-cancel sheet-cancel--inline" bindtap="onClosePhoneSheet">{{t.common.cancel}}</view>
       </view>
     </view>
   </view>
 
   <!-- 头像预览 -->
   <view class="avatar-preview" wx:if="{{showAvatarPreview}}" catchtouchmove="noop">
-    <view class="avatar-preview-close" bindtap="onCloseAvatarPreview">关闭</view>
+    <view class="avatar-preview-close" bindtap="onCloseAvatarPreview">{{t.common.close}}</view>
     <image class="avatar-preview-img" src="{{avatarUrl}}" mode="aspectFit" bindtap="onCloseAvatarPreview" />
     <view class="avatar-preview-footer">
-      <view class="avatar-preview-save" bindtap="onSaveAvatarToAlbum">保存头像</view>
+      <view class="avatar-preview-save" bindtap="onSaveAvatarToAlbum">{{t.edit.saveImage}}</view>
     </view>
   </view>
 
   <!-- 注销确认 -->
   <view class="sheet-mask sheet-mask--center" wx:if="{{showLogoutConfirm}}" catchtouchmove="noop" bindtap="onCloseLogoutConfirm">
     <view class="confirm-dialog" catchtap="noop">
-      <view class="confirm-title">确认注销登录？</view>
-      <view class="confirm-desc">退出后需重新授权手机号登录</view>
+      <view class="confirm-title">{{t.edit.logoutConfirmTitle}}</view>
+      <view class="confirm-desc">{{t.edit.logoutConfirmDesc}}</view>
       <view class="confirm-actions">
-        <view class="confirm-btn confirm-btn--cancel" bindtap="onCloseLogoutConfirm">取消</view>
-        <view class="confirm-btn confirm-btn--danger" bindtap="onConfirmLogout">确认退出</view>
+        <view class="confirm-btn confirm-btn--cancel" bindtap="onCloseLogoutConfirm">{{t.common.cancel}}</view>
+        <view class="confirm-btn confirm-btn--danger" bindtap="onConfirmLogout">{{t.edit.logoutConfirm}}</view>
       </view>
     </view>
   </view>

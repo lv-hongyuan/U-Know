@@ -1,4 +1,13 @@
-// app.js
+const {
+  t,
+  getI18nData,
+  onLocaleChange,
+  getLocale,
+  setLocale,
+  applyUserLocale,
+  DEFAULT_LOCALE,
+} = require("./i18n/index");
+
 App({
   onLaunch: function () {
     this.globalData = {
@@ -8,6 +17,7 @@ App({
       env: "cloudbase-2gta2u0scd51b686",
       themeColor: "#028527",
       userInfo: null,
+      locale: getLocale(),
     };
     if (!wx.cloud) {
       console.error("请使用 2.2.3 或以上的基础库以使用云能力");
@@ -23,5 +33,24 @@ App({
     } catch (e) {
       this.globalData.userInfo = null;
     }
+
+    const loggedIn = !!(
+      this.globalData.userInfo && this.globalData.userInfo.phoneNumber
+    );
+    if (loggedIn) {
+      // 已登录：用本地缓存的用户语言先对齐（云端 getProfile 还会再校准）
+      applyUserLocale(this.globalData.userInfo);
+    } else {
+      // 未登录：默认简体中文
+      setLocale(DEFAULT_LOCALE);
+    }
+    this.globalData.locale = getLocale();
+
+    onLocaleChange((locale) => {
+      this.globalData.locale = locale;
+    });
   },
+
+  t,
+  getI18nData,
 });

@@ -6,46 +6,151 @@ const {
   displayAvatar,
   normalizeUser,
   DEFAULT_AVATAR,
-  DEFAULT_NICK_NAME,
+  defaultNickName,
 } = require("../../utils/user");
+const { getI18nData, t, onLocaleChange, applyUserLocale, getLocale } = require("../../i18n/index");
+const { listMine, listCollected, mapFeedCards } = require("../../utils/post");
+const { getDrafts } = require("../../utils/draft");
+
+const PAGE_SIZE = 10;
 
 Page({
   data: {
+    t: getI18nData(),
     loggedIn: false,
-    nickName: DEFAULT_NICK_NAME,
+    nickName: defaultNickName(),
     avatarUrl: DEFAULT_AVATAR,
-    phoneNumber: "",
+    bio: "",
+    followerCount: 0,
+    followingCount: 0,
+    likeCollectCount: 0,
     showLogin: false,
     submitting: false,
+    mainTab: "posts",
+    postFilter: "public",
+    publicCount: 0,
+    privateCount: 0,
+    draftCount: 0,
+    draftList: [],
+    list: [],
+    loading: false,
+    refreshing: false,
+    hasMore: true,
+    emptyText: "",
   },
 
   noop() {},
 
+  onLoad() {
+    this._offLocale = onLocaleChange(() => {
+      this.applyI18n();
+      this.syncUser();
+      this.refreshEmptyText();
+    });
+  },
+
+  onUnload() {
+    if (this._offLocale) this._offLocale();
+  },
+
   onShow() {
+    this.applyI18n();
+    this.setTabBarHidden(this.data.showLogin);
     if (typeof this.getTabBar === "function" && this.getTabBar()) {
       this.getTabBar().setData({ selected: 4 });
     }
     this.syncUser();
-    this.refreshUserFromCloud();
+    this.refreshUserFromCloud().finally(() => {
+      if (isLoggedIn()) {
+        this.refreshDrafts();
+        this.loadList({ reset: true });
+      } else {
+        this.setData({
+          list: [],
+          draftList: [],
+          draftCount: 0,
+          publicCount: 0,
+          privateCount: 0,
+          hasMore: false,
+        });
+      }
+    });
+  },
+
+  onPullRefresh() {
+    this.setData({ refreshing: true });
+    this.syncUser();
+    Promise.resolve(this.refreshUserFromCloud())
+      .then(() => {
+        if (!isLoggedIn()) {
+          this.setData({
+            list: [],
+            draftList: [],
+            draftCount: 0,
+            publicCount: 0,
+            privateCount: 0,
+            hasMore: false,
+          });
+          return;
+        }
+        this.refreshDrafts();
+        return this.loadList({ reset: true });
+      })
+      .finally(() => {
+        this.setData({ refreshing: false });
+      });
+  },
+
+  setTabBarHidden(hidden) {
+    if (typeof this.getTabBar === "function" && this.getTabBar()) {
+      this.getTabBar().setData({ hidden: !!hidden });
+    }
+  },
+
+  applyI18n() {
+    this.setData({ t: getI18nData() });
+    wx.setNavigationBarTitle({ title: " " });
+    this.refreshEmptyText();
+  },
+
+  refreshEmptyText() {
+    let emptyText = "";
+    if (this.data.mainTab === "collect") {
+      emptyText = t("profile.emptyCollect");
+    } else if (this.data.postFilter === "private") {
+      emptyText = t("profile.emptyPrivate");
+    } else if (this.data.postFilter === "draft") {
+      emptyText = t("profile.emptyDraft");
+    } else {
+      emptyText = t("profile.emptyPublic");
+    }
+    this.setData({ emptyText });
   },
 
   applyUser(user) {
     const normalized = normalizeUser(user);
     if (normalized) {
+      applyUserLocale(normalized);
       this.setData({
         loggedIn: true,
         nickName: displayNickName(normalized),
         avatarUrl: displayAvatar(normalized),
-        phoneNumber: normalized.phoneNumber,
+        bio: normalized.bio || "",
+        followerCount: normalized.followerCount || 0,
+        followingCount: normalized.followingCount || 0,
+        likeCollectCount: normalized.likeCollectCount || 0,
       });
       return;
     }
 
     this.setData({
       loggedIn: false,
-      nickName: DEFAULT_NICK_NAME,
+      nickName: defaultNickName(),
       avatarUrl: DEFAULT_AVATAR,
-      phoneNumber: "",
+      bio: "",
+      followerCount: 0,
+      followingCount: 0,
+      likeCollectCount: 0,
     });
   },
 
@@ -53,7 +158,22 @@ Page({
     this.applyUser(getLocalUser());
   },
 
+  refreshDrafts() {
+    const drafts = getDrafts();
+    const draftList = drafts.map((d) => ({
+      id: d.id,
+      title: d.title || "",
+      cover: d.type === "image" && d.images && d.images[0] ? d.images[0] : "",
+    }));
+    this.setData({
+      draftList,
+      draftCount: drafts.length,
+    });
+  },
+
   async refreshUserFromCloud() {
+    if (!isLoggedIn()) return;
+
     try {
       const res = await wx.cloud.callFunction({
         name: "login",
@@ -69,13 +189,101 @@ Page({
         return;
       }
 
-      if (getLocalUser()) {
-        setLocalUser(null);
-        this.applyUser(null);
-      }
+      setLocalUser(null);
+      this.applyUser(null);
     } catch (e) {
       console.warn("refreshUserFromCloud failed", e);
     }
+  },
+
+  onSwitchMainTab(e) {
+    const tab = e.currentTarget.dataset.tab === "collect" ? "collect" : "posts";
+    if (tab === this.data.mainTab) return;
+    this.setData({ mainTab: tab });
+    this.refreshEmptyText();
+    if (tab === "posts") this.refreshDrafts();
+    this.loadList({ reset: true });
+  },
+
+  onSwitchPostFilter(e) {
+    const filter = e.currentTarget.dataset.filter;
+    if (!["public", "private", "draft"].includes(filter)) return;
+    if (filter === this.data.postFilter) return;
+    this.setData({ postFilter: filter });
+    this.refreshEmptyText();
+    if (filter === "draft") {
+      this.refreshDrafts();
+      this.setData({ list: [], loading: false, hasMore: false });
+      return;
+    }
+    this.loadList({ reset: true });
+  },
+
+  onReachBottomList() {
+    if (this.data.mainTab === "posts" && this.data.postFilter === "draft") return;
+    if (this.data.loading || !this.data.hasMore) return;
+    this.loadList({ reset: false });
+  },
+
+  async loadList({ reset }) {
+    if (!isLoggedIn()) return;
+    if (this.data.mainTab === "posts" && this.data.postFilter === "draft") {
+      this.refreshDrafts();
+      return;
+    }
+    if (this.data.loading) return;
+
+    const skip = reset ? 0 : this.data.list.length;
+    this.setData({ loading: true });
+
+    try {
+      let result;
+      if (this.data.mainTab === "collect") {
+        result = await listCollected({ skip, limit: PAGE_SIZE });
+      } else {
+        result = await listMine({
+          visibility: this.data.postFilter === "private" ? "private" : "public",
+          skip,
+          limit: PAGE_SIZE,
+        });
+      }
+
+      if (!result.ok) {
+        throw new Error(result.error || "list failed");
+      }
+
+      const cards = await mapFeedCards(result.list || []);
+      const patch = {
+        list: reset ? cards : this.data.list.concat(cards),
+        hasMore: !!result.hasMore,
+        loading: false,
+      };
+      if (this.data.mainTab === "posts") {
+        if (typeof result.publicCount === "number") {
+          patch.publicCount = result.publicCount;
+        }
+        if (typeof result.privateCount === "number") {
+          patch.privateCount = result.privateCount;
+        }
+      }
+      this.setData(patch);
+    } catch (err) {
+      console.error("profile list failed", err);
+      this.setData({ loading: false });
+      wx.showToast({ title: t("common.operationFailed"), icon: "none" });
+    }
+  },
+
+  onTapPost(e) {
+    const id = e.detail && e.detail.id;
+    if (!id) return;
+    wx.navigateTo({ url: `/pages/post/detail?id=${id}` });
+  },
+
+  onTapDraft(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    wx.navigateTo({ url: `/pages/publish/compose?draftId=${id}` });
   },
 
   onTapHeader() {
@@ -84,11 +292,35 @@ Page({
       return;
     }
     this.setData({ showLogin: true });
+    this.setTabBarHidden(true);
+  },
+
+  onTapSettings() {
+    wx.navigateTo({ url: "/pages/settings/index" });
+  },
+
+  onTapFollowers() {
+    if (!this.data.loggedIn) {
+      this.setData({ showLogin: true });
+      this.setTabBarHidden(true);
+      return;
+    }
+    wx.navigateTo({ url: "/pages/relations/index?tab=followers" });
+  },
+
+  onTapFollowing() {
+    if (!this.data.loggedIn) {
+      this.setData({ showLogin: true });
+      this.setTabBarHidden(true);
+      return;
+    }
+    wx.navigateTo({ url: "/pages/relations/index?tab=following" });
   },
 
   onCloseLogin() {
     if (this.data.submitting) return;
     this.setData({ showLogin: false });
+    this.setTabBarHidden(false);
   },
 
   async onGetPhoneNumber(e) {
@@ -97,14 +329,17 @@ Page({
     const { code, errMsg } = e.detail || {};
     if (!code) {
       wx.showToast({
-        title: errMsg && errMsg.indexOf("deny") > -1 ? "需要授权手机号" : "授权失败",
+        title:
+          errMsg && errMsg.indexOf("deny") > -1
+            ? t("profile.needPhoneAuth")
+            : t("profile.authFailed"),
         icon: "none",
       });
       return;
     }
 
     this.setData({ submitting: true });
-    wx.showLoading({ title: "登录中", mask: true });
+    wx.showLoading({ title: t("profile.loggingIn"), mask: true });
 
     try {
       const loginRes = await wx.cloud.callFunction({
@@ -112,12 +347,15 @@ Page({
         data: {
           type: "login",
           phoneCode: code,
+          locale: getLocale(),
         },
       });
 
       const result = loginRes.result || {};
       if (!result.ok || !result.user) {
-        throw new Error(result.message || result.error || "登录失败");
+        throw new Error(
+          result.message || result.error || t("profile.loginFailedGeneric")
+        );
       }
 
       const normalized = normalizeUser(result.user);
@@ -126,8 +364,11 @@ Page({
         showLogin: false,
         submitting: false,
       });
+      this.setTabBarHidden(false);
       this.applyUser(normalized);
-      wx.showToast({ title: "登录成功", icon: "success" });
+      this.refreshDrafts();
+      this.loadList({ reset: true });
+      wx.showToast({ title: t("profile.loginSuccess"), icon: "success" });
     } catch (err) {
       console.error("login failed", err);
       this.setData({ submitting: false });
@@ -141,13 +382,12 @@ Page({
 
       if (notDeployed) {
         wx.showModal({
-          title: "云函数 login 未部署",
-          content:
-            "请右键 cloudfunctions/login → 上传并部署：云端安装依赖后再试。",
+          title: t("profile.cloudNotDeployedTitle"),
+          content: t("profile.cloudNotDeployedContent"),
           showCancel: false,
         });
       } else {
-        wx.showToast({ title: "登录失败，请重试", icon: "none" });
+        wx.showToast({ title: t("profile.loginFailed"), icon: "none" });
       }
     } finally {
       wx.hideLoading();

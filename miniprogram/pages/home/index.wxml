@@ -1,3 +1,41 @@
-<view class="page">
-  <view class="page-blank">首页</view>
+<view class="page home-page">
+  <view class="home-nav" style="padding-top: {{statusBarHeight}}px; height: {{navBarHeight}}px;">
+    <view
+      class="home-tabs"
+      style="height: {{menuHeight}}px; margin-top: {{menuTopGap}}px;"
+    >
+      <view
+        class="home-tab {{feed === 'following' ? 'home-tab--active' : ''}}"
+        data-feed="following"
+        bindtap="onSwitchFeed"
+      >{{t.feed.following}}</view>
+      <view
+        class="home-tab {{feed === 'plaza' ? 'home-tab--active' : ''}}"
+        data-feed="plaza"
+        bindtap="onSwitchFeed"
+      >{{t.feed.plaza}}</view>
+    </view>
+  </view>
+
+  <scroll-view
+    class="home-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
+    bindscrolltolower="onLoadMore"
+    lower-threshold="120"
+  >
+    <post-waterfall
+      list="{{list}}"
+      loading="{{loading}}"
+      hasMore="{{hasMore}}"
+      emptyText="{{emptyText}}"
+      loadingText="{{t.common.loading}}"
+      noMoreText="{{t.feed.noMore}}"
+      bind:itemtap="onTapPost"
+    />
+  </scroll-view>
 </view>

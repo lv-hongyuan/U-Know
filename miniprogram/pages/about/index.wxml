@@ -1,0 +1,3 @@
+<view class="page about-page">
+  <view class="page-blank">{{t.about.blank}}</view>
+</view>

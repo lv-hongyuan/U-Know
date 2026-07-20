@@ -9,6 +9,8 @@ const DEFAULT_NICK_NAME = "微信用户";
 const DEFAULT_AVATAR = "";
 const BIO_MAX_LENGTH = 60;
 const GENDERS = ["male", "female", "secret"];
+const LOCALES = ["zh-Hans", "zh-Hant", "en", "ja", "ko"];
+const DEFAULT_LOCALE = "zh-Hans";
 
 async function ensureUsersCollection() {
   try {
@@ -16,6 +18,11 @@ async function ensureUsersCollection() {
   } catch (e) {
     // 集合已存在时忽略
   }
+}
+
+function toCount(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
 function formatUser(user) {
@@ -31,6 +38,10 @@ function formatUser(user) {
     hometown: user.hometown || "",
     hometownProvince: user.hometownProvince || "",
     hometownCity: user.hometownCity || "",
+    locale: LOCALES.includes(user.locale) ? user.locale : "",
+    followerCount: toCount(user.followerCount),
+    followingCount: toCount(user.followingCount),
+    likeCollectCount: toCount(user.likeCollectCount),
   };
 }
 
@@ -46,18 +57,32 @@ async function findUserByOpenid(openid) {
   return data[0] || null;
 }
 
-async function upsertUserByPhone({ openid, phoneNumber }) {
+async function upsertUserByPhone({ openid, phoneNumber, locale }) {
   const now = db.serverDate();
   const existing = await findUserByOpenid(openid);
+  const nextLocale = LOCALES.includes(locale) ? locale : DEFAULT_LOCALE;
 
   if (existing) {
-    await users.doc(existing._id).update({
-      data: {
-        phoneNumber,
-        updatedAt: now,
-      },
-    });
-    return formatUser({ ...existing, phoneNumber });
+    const data = {
+      phoneNumber,
+      updatedAt: now,
+    };
+    // 老用户尚无语言字段时，用本次登录带来的本地语言回填一次
+    if (!LOCALES.includes(existing.locale) && LOCALES.includes(locale)) {
+      data.locale = locale;
+    }
+    // 老用户补齐关注 / 获赞计数字段
+    if (typeof existing.followerCount !== "number") {
+      data.followerCount = 0;
+    }
+    if (typeof existing.followingCount !== "number") {
+      data.followingCount = 0;
+    }
+    if (typeof existing.likeCollectCount !== "number") {
+      data.likeCollectCount = 0;
+    }
+    await users.doc(existing._id).update({ data });
+    return formatUser({ ...existing, ...data });
   }
 
   const payload = {
@@ -71,6 +96,10 @@ async function upsertUserByPhone({ openid, phoneNumber }) {
     hometown: "",
     hometownProvince: "",
     hometownCity: "",
+    locale: nextLocale,
+    followerCount: 0,
+    followingCount: 0,
+    likeCollectCount: 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -117,6 +146,7 @@ exports.main = async (event) => {
     const user = await upsertUserByPhone({
       openid: OPENID,
       phoneNumber,
+      locale: event.locale,
     });
 
     return { ok: true, user };
@@ -199,6 +229,13 @@ exports.main = async (event) => {
       patch.hometown = event.hometown;
       patch.hometownProvince = event.hometownProvince || "";
       patch.hometownCity = event.hometownCity || "";
+    }
+
+    if (typeof event.locale === "string") {
+      if (!LOCALES.includes(event.locale)) {
+        return { ok: false, error: "INVALID_LOCALE" };
+      }
+      patch.locale = event.locale;
     }
 
     await users.doc(existing._id).update({ data: patch });

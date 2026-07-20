@@ -1,0 +1,151 @@
+.wf {
+  padding: 0 8rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.wf-cols {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.wf-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.wf-card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.wf-cover-wrap {
+  position: relative;
+  width: 100%;
+  height: 0;
+  background: #e8ece8;
+}
+
+.wf-cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wf-cover--text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background: linear-gradient(145deg, #0a2e1a 0%, #14522e 55%, #028527 100%);
+}
+
+.wf-views {
+  position: absolute;
+  left: 12rpx;
+  bottom: 12rpx;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 20rpx;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.wf-views-icon {
+  width: 22rpx;
+  height: 22rpx;
+}
+
+.wf-views-num {
+  font-size: 20rpx;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.wf-cover-title {
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.wf-title {
+  padding: 14rpx 12rpx 0;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #0f1f16;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.wf-meta {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 12rpx 16rpx;
+  gap: 8rpx;
+}
+
+.wf-avatar {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 18rpx;
+  background: #d8ddd8;
+  flex-shrink: 0;
+}
+
+.wf-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  color: #0f1f16;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-like {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  flex-shrink: 0;
+}
+
+.wf-heart {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.wf-like-num {
+  font-size: 22rpx;
+  color: #5c6b60;
+}
+
+.wf-empty,
+.wf-status {
+  padding: 64rpx 24rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #8a968c;
+}
+
+.wf-status {
+  padding: 28rpx 24rpx 48rpx;
+}

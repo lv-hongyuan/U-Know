@@ -1,0 +1,282 @@
+.detail-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f3f6f2;
+  box-sizing: border-box;
+  padding-bottom: 0;
+}
+
+.detail-page--loading {
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-scroll {
+  flex: 1;
+  height: 0;
+  box-sizing: border-box;
+}
+
+.detail-author {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 28rpx 12rpx;
+}
+
+.detail-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  background: #d8ddd8;
+  flex-shrink: 0;
+}
+
+.detail-nick {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #0f1f16;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-menu {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.detail-menu-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.detail-swiper {
+  width: 100%;
+  background: #0f1f16;
+}
+
+.detail-image {
+  width: 100%;
+  height: 100%;
+}
+
+.detail-text-cover {
+  margin: 0 28rpx;
+  min-height: 280rpx;
+  border-radius: 20rpx;
+  padding: 40rpx 32rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #0a2e1a 0%, #14522e 55%, #028527 100%);
+}
+
+.detail-text-cover-title {
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.detail-body {
+  padding: 24rpx 28rpx 8rpx;
+}
+
+.detail-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #0f1f16;
+  line-height: 1.4;
+}
+
+.detail-content {
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  color: #0f1f16;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detail-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.detail-topic {
+  font-size: 24rpx;
+  color: #028527;
+  font-weight: 600;
+}
+
+.detail-views {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  color: #8a968c;
+}
+
+.detail-views-icon {
+  width: 28rpx;
+  height: 28rpx;
+  opacity: 0.55;
+  /* eye.svg 为白色，详情浅底上调暗 */
+  filter: invert(1) brightness(0.45);
+}
+
+.detail-comments-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  padding: 28rpx 28rpx 8rpx;
+}
+
+.detail-comments-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #0f1f16;
+}
+
+.detail-comments-count {
+  font-size: 24rpx;
+  color: #8a968c;
+}
+
+.detail-comment {
+  display: flex;
+  gap: 16rpx;
+  padding: 20rpx 28rpx;
+}
+
+.detail-comment-avatar {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  background: #d8ddd8;
+  flex-shrink: 0;
+}
+
+.detail-comment-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.detail-comment-nick {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #5c6b60;
+}
+
+.detail-comment-text {
+  font-size: 28rpx;
+  color: #0f1f16;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.detail-empty,
+.detail-status {
+  padding: 40rpx 28rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #8a968c;
+}
+
+.detail-scroll-pad {
+  height: calc(140rpx + env(safe-area-inset-bottom));
+}
+
+.detail-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 20rpx calc(12rpx + env(safe-area-inset-bottom));
+  background: #ffffff;
+  box-shadow: 0 -8rpx 24rpx rgba(10, 46, 26, 0.06);
+  box-sizing: border-box;
+}
+
+.detail-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  flex-shrink: 0;
+  gap: 2rpx;
+}
+
+.detail-action-icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.detail-action-num {
+  font-size: 18rpx;
+  color: #5c6b60;
+  line-height: 1;
+}
+
+.detail-input-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 72rpx;
+  padding: 0 8rpx 0 24rpx;
+  border-radius: 36rpx;
+  background: #f3f6f2;
+  box-sizing: border-box;
+}
+
+.detail-input {
+  flex: 1;
+  min-width: 0;
+  height: 72rpx;
+  font-size: 26rpx;
+  color: #0f1f16;
+}
+
+.detail-send {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.35;
+}
+
+.detail-send--on {
+  opacity: 1;
+  background: #e8f5e9;
+}
+
+.detail-send-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
