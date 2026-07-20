@@ -206,11 +206,56 @@ Page({
     this.setData({ showAvatarSheet: false });
   },
 
+  /** 微信原生 1:1 裁剪，体验接近系统改头像 */
+  cropAvatarToSquare(src) {
+    return new Promise((resolve, reject) => {
+      if (!src) {
+        reject(new Error("empty image"));
+        return;
+      }
+      if (typeof wx.cropImage !== "function") {
+        // 低版本基础库兜底：不裁剪直接用原图
+        resolve(src);
+        return;
+      }
+      wx.cropImage({
+        src,
+        cropScale: "1:1",
+        success: (res) => {
+          if (res && res.tempFilePath) {
+            resolve(res.tempFilePath);
+            return;
+          }
+          reject(new Error("crop empty"));
+        },
+        fail: (err) => {
+          const msg = (err && err.errMsg) || "";
+          if (msg.indexOf("cancel") > -1) {
+            reject({ canceled: true, errMsg: msg });
+            return;
+          }
+          reject(err || new Error("crop failed"));
+        },
+      });
+    });
+  },
+
+  async pickAndCropAvatar(src) {
+    try {
+      const cropped = await this.cropAvatarToSquare(src);
+      await this.uploadAndSaveAvatar(cropped);
+    } catch (e) {
+      if (e && e.canceled) return;
+      console.error("crop avatar failed", e);
+      wx.showToast({ title: "裁剪失败", icon: "none" });
+    }
+  },
+
   onChooseWechatAvatar(e) {
     const { avatarUrl } = e.detail || {};
     this.setData({ showAvatarSheet: false });
     if (!avatarUrl) return;
-    this.uploadAndSaveAvatar(avatarUrl);
+    this.pickAndCropAvatar(avatarUrl);
   },
 
   async onPickCamera() {
@@ -224,7 +269,7 @@ Page({
       });
       const file = res.tempFiles && res.tempFiles[0];
       if (!file || !file.tempFilePath) return;
-      this.uploadAndSaveAvatar(file.tempFilePath);
+      await this.pickAndCropAvatar(file.tempFilePath);
     } catch (e) {
       if (e && e.errMsg && e.errMsg.includes("cancel")) return;
       wx.showToast({ title: "拍摄失败", icon: "none" });
@@ -242,7 +287,7 @@ Page({
       });
       const file = res.tempFiles && res.tempFiles[0];
       if (!file || !file.tempFilePath) return;
-      this.uploadAndSaveAvatar(file.tempFilePath);
+      await this.pickAndCropAvatar(file.tempFilePath);
     } catch (e) {
       if (e && e.errMsg && e.errMsg.includes("cancel")) return;
       wx.showToast({ title: "选择失败", icon: "none" });
