@@ -37,7 +37,7 @@
   height: 6rpx;
   margin-left: -24rpx;
   border-radius: 3rpx;
-  background: #028527;
+  background: #FF6B1A;
 }
 
 .relations-search {
@@ -49,7 +49,7 @@
   align-items: center;
   height: 72rpx;
   padding: 0 24rpx;
-  background: #f3f6f2;
+  background: #fff6f0;
   border-radius: 36rpx;
   box-sizing: border-box;
 }
@@ -179,8 +179,8 @@
 
 .relations-action--primary {
   color: #ffffff;
-  background: #028527;
-  border-color: #028527;
+  background: #FF6B1A;
+  border-color: #FF6B1A;
 }
 
 .relations-action--mutual {
@@ -194,6 +194,25 @@
   text-align: center;
   font-size: 26rpx;
   color: #8a968c;
+}
+
+.relations-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  padding-top: 120rpx;
+}
+
+.relations-empty-icon {
+  width: 160rpx;
+  height: 160rpx;
+}
+
+.relations-empty-text {
+  font-size: 26rpx;
+  color: #8a968c;
+  line-height: 1.4;
 }
 
 .relations-end {

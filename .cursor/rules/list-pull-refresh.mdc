@@ -1,0 +1,58 @@
+---
+description: List pages should include pull-to-refresh when it makes product sense
+globs: miniprogram/pages/**/*.{wxml,js,json}
+alwaysApply: true
+---
+
+# 列表页下拉刷新
+
+新建或改动**列表型页面**时，默认加上拉刷新；先判断是否合理，再实现。
+
+## 何时加（默认要加）
+
+- 分页 / 无限滚动信息流（首页、广场、消息分类列表、关注关系列表等）
+- 内容会随时间变化、用户会回来再看的列表
+- 使用 `scroll-view` 承载列表时：用 `refresher-enabled` + `refresher-triggered` + `bindrefresherrefresh`
+- 使用页面原生滚动时：在 `json` 开 `enablePullDownRefresh`，并实现 `onPullDownRefresh`（结束后 `wx.stopPullDownRefresh()`）
+
+## 何时可不加
+
+- 静态说明 / 占位 / 表单页（关于、设置项、发布编辑、空壳占位页）
+- 列表极短且几乎不变、刷新无意义的页面
+- 已有明确「手动刷新」且与下拉冲突的特殊交互（需在实现里说明原因）
+
+## 实现约定
+
+1. `data` 增加 `refreshing: false`（`scroll-view` refresher）或依赖系统下拉态。
+2. `onRefresh` / `onPullDownRefresh`：`reset: true` 重新拉第一页；`finally` 里关掉 `refreshing` / `stopPullDownRefresh`。
+3. **重置加载**遵循 `list-skeleton.mdc`：先切 UI → 清空列表出骨架 → 再请求；用 `_listReqId` 丢弃过期响应。加载更多不整页骨架。
+4. 刷新后保留合理 UI（如当前 tab / 筛选）；搜索关键词可保留并按当前条件重拉。
+5. 文案走 i18n；不要为刷新单独硬编码提示，失败用既有 `common.operationFailed` 等。
+6. **空状态**：列表无数据且非 loading 时显示图标 + `t.common.noData`（「暂无数据」），图标用 `/images/empty.svg`；不要只放一行灰字。
+
+```xml
+<!-- ✅ 空状态 -->
+<view class="xxx-empty" wx:if="{{!loading && list.length === 0}}">
+  <image class="xxx-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+  <text class="xxx-empty-text">{{t.common.noData}}</text>
+</view>
+```
+
+```xml
+<!-- ✅ scroll-view 列表 -->
+<scroll-view
+  scroll-y
+  refresher-enabled
+  refresher-triggered="{{refreshing}}"
+  bindrefresherrefresh="onRefresh"
+  bindscrolltolower="onLoadMore"
+>
+```
+
+```js
+// ✅
+async onRefresh() {
+  this.setData({ refreshing: true });
+  await this.loadList({ reset: true });
+}
+```

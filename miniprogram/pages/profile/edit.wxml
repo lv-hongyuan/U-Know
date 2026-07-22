@@ -33,6 +33,16 @@
 
     <view class="edit-line"></view>
 
+    <view class="edit-row" bindtap="onCopyShortId" wx:if="{{shortId}}">
+      <view class="edit-label">{{t.user.accountId}}</view>
+      <view class="edit-right">
+        <text class="edit-value">{{shortId}}</text>
+        <text class="edit-copy-tip">{{t.user.tapToCopy}}</text>
+      </view>
+    </view>
+
+    <view class="edit-line" wx:if="{{shortId}}"></view>
+
     <view class="edit-row" bindtap="onTapPhone">
       <view class="edit-label">{{t.edit.phone}}</view>
       <view class="edit-right">
@@ -116,6 +126,28 @@
           <view class="edit-arrow"></view>
         </view>
       </picker>
+    </view>
+
+    <view class="edit-line"></view>
+
+    <view class="edit-row" bindtap="onTapSchool">
+      <view class="edit-label">{{t.edit.school}}</view>
+      <view class="edit-right">
+        <text class="edit-value {{schoolLabel ? '' : 'edit-value--placeholder'}}">{{schoolLabel || t.edit.noSchool}}</text>
+        <view class="edit-arrow"></view>
+      </view>
+    </view>
+
+    <view class="edit-line"></view>
+
+    <view class="edit-row edit-row--switch">
+      <view class="edit-label">{{t.edit.showSchool}}</view>
+      <switch
+        class="edit-switch"
+        checked="{{showSchool}}"
+        color="#FF6B1A"
+        bindchange="onShowSchoolChange"
+      />
     </view>
 
     <view class="edit-line"></view>

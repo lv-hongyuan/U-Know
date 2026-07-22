@@ -1,0 +1,45 @@
+<view class="fp-mask" wx:if="{{show}}" catchtouchmove="noop" bindtap="onClose">
+  <view class="fp-sheet" catchtap="noop">
+    <view class="fp-title">{{title || t.chat.forwardTitle}}</view>
+    <input
+      class="fp-search"
+      value="{{keyword}}"
+      placeholder="{{t.chat.forwardSearch}}"
+      bindinput="onSearch"
+    />
+    <scroll-view
+      class="fp-list"
+      scroll-y
+      bindscrolltolower="onScrollToLower"
+      lower-threshold="80"
+    >
+      <view class="fp-loading" wx:if="{{loading && !list.length}}">{{t.common.loading}}</view>
+      <block wx:elif="{{list.length}}">
+        <view
+          class="fp-item"
+          wx:for="{{list}}"
+          wx:key="openid"
+          data-openid="{{item.openid}}"
+          bindtap="onToggle"
+        >
+          <view class="fp-check {{selected[item.openid] ? 'fp-check--on' : ''}}"></view>
+          <image class="fp-avatar" src="{{item.avatarUrl || defaultAvatar}}" mode="aspectFill" />
+          <text class="fp-name">{{item.nickName}}</text>
+        </view>
+        <view class="fp-more" wx:if="{{loadingMore}}">{{t.common.loading}}</view>
+        <view class="fp-more" wx:elif="{{!hasMore}}">{{t.message.noMore}}</view>
+      </block>
+      <view class="fp-empty" wx:else>
+        <image class="fp-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+        <text>{{t.common.noData}}</text>
+      </view>
+    </scroll-view>
+    <view class="fp-actions">
+      <view class="fp-btn" bindtap="onClose">{{t.common.cancel}}</view>
+      <view
+        class="fp-btn fp-btn--primary {{selectedCount ? '' : 'fp-btn--disabled'}}"
+        bindtap="onConfirm"
+      >{{t.chat.send}}{{selectedCount ? ' (' + selectedCount + ')' : ''}}</view>
+    </view>
+  </view>
+</view>

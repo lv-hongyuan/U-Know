@@ -46,8 +46,13 @@
     scroll-y
     enhanced
     show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
     bindscrolltolower="onReachBottom"
   >
+    <list-skeleton wx:if="{{loading && list.length === 0}}" type="relation" rows="{{8}}" />
+
     <view
       class="relations-item"
       wx:for="{{list}}"
@@ -57,8 +62,14 @@
         class="relations-avatar"
         src="{{item.avatarUrl || defaultAvatar}}"
         mode="aspectFill"
+        data-openid="{{item.openid}}"
+        catchtap="onTapAvatar"
       />
-      <view class="relations-meta">
+      <view
+        class="relations-meta"
+        data-openid="{{item.openid}}"
+        bindtap="onTapAvatar"
+      >
         <view class="relations-name">{{item.nickName}}</view>
         <view class="relations-desc" wx:if="{{item.bio}}">{{item.bio}}</view>
         <view class="relations-desc" wx:elif="{{item.hometown}}">{{item.hometown}}</view>
@@ -73,9 +84,10 @@
     </view>
 
     <view class="relations-empty" wx:if="{{!loading && list.length === 0}}">
-      {{emptyText}}
+      <image class="relations-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+      <text class="relations-empty-text">{{t.common.noData}}</text>
     </view>
-    <view class="relations-loading" wx:if="{{loading}}">{{t.common.loading}}</view>
+    <view class="relations-loading" wx:if="{{loading && list.length > 0}}">{{t.common.loading}}</view>
     <view class="relations-end" wx:if="{{!loading && list.length > 0 && !hasMore}}">{{t.relations.noMore}}</view>
   </scroll-view>
 </view>

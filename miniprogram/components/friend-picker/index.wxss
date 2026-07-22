@@ -1,0 +1,138 @@
+.fp-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(61, 20, 8, 0.45);
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+}
+
+.fp-sheet {
+  width: 100%;
+  max-height: 78vh;
+  background: #fff6f0;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 28rpx 0 calc(20rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.fp-title {
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #3d1408;
+  margin-bottom: 16rpx;
+}
+
+.fp-search {
+  margin: 0 28rpx 16rpx;
+  height: 72rpx;
+  padding: 0 24rpx;
+  border-radius: 36rpx;
+  background: #ffffff;
+  font-size: 28rpx;
+}
+
+.fp-list {
+  flex: 1;
+  height: 480rpx;
+  padding: 0 12rpx;
+  box-sizing: border-box;
+}
+
+.fp-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx 16rpx;
+  min-height: 88rpx;
+  box-sizing: border-box;
+}
+
+.fp-check {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 18rpx;
+  border: 3rpx solid #d8c4b6;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.fp-check--on {
+  border-color: #ff6b1a;
+  background: #ff6b1a;
+}
+
+.fp-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: #e8ece8;
+  flex-shrink: 0;
+}
+
+.fp-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: #3d1408;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fp-loading,
+.fp-more,
+.fp-empty {
+  padding: 40rpx 24rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #9a6b52;
+}
+
+.fp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.fp-empty-icon {
+  width: 96rpx;
+  height: 96rpx;
+  opacity: 0.7;
+}
+
+.fp-actions {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx 28rpx 0;
+}
+
+.fp-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: #ffffff;
+  color: #3d1408;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fp-btn--primary {
+  background: linear-gradient(135deg, #ff6b1a 0%, #ff3b30 100%);
+  color: #ffffff;
+}
+
+.fp-btn--disabled {
+  opacity: 0.45;
+}

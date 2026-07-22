@@ -46,9 +46,15 @@ Page({
   },
 
   async loadList({ reset }) {
-    if (this.data.loading) return;
+    if (!reset && (this.data.loading || !this.data.hasMore)) return;
+
+    const reqId = (this._listReqId = (this._listReqId || 0) + 1);
     const skip = reset ? 0 : this.data.list.length;
-    this.setData({ loading: true });
+    if (reset) {
+      this.setData({ list: [], hasMore: true, loading: true });
+    } else {
+      this.setData({ loading: true });
+    }
 
     try {
       const result = await listFeed({
@@ -56,18 +62,24 @@ Page({
         skip,
         limit: PAGE_SIZE,
       });
+      if (reqId !== this._listReqId) return;
       if (!result.ok) {
         throw new Error(result.error || "list failed");
       }
       const cards = await mapFeedCards(result.list || []);
+      if (reqId !== this._listReqId) return;
       this.setData({
         list: reset ? cards : this.data.list.concat(cards),
         hasMore: !!result.hasMore,
         loading: false,
       });
     } catch (err) {
+      if (reqId !== this._listReqId) return;
       console.error("explore feed failed", err);
-      this.setData({ loading: false });
+      this.setData({
+        loading: false,
+        ...(reset ? { list: [], hasMore: false } : {}),
+      });
       wx.showToast({ title: t("common.operationFailed"), icon: "none" });
     }
   },

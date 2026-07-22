@@ -1,0 +1,56 @@
+<view class="page follows-page">
+  <scroll-view
+    class="follows-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
+    bindscrolltolower="onLoadMore"
+    lower-threshold="120"
+  >
+    <list-skeleton wx:if="{{loading && list.length === 0}}" type="relation" rows="{{8}}" />
+
+    <view
+      class="follows-item"
+      wx:for="{{list}}"
+      wx:key="id"
+      data-openid="{{item.fromOpenid}}"
+      hover-class="follows-item--pressed"
+      hover-stay-time="80"
+      bindtap="onTapItem"
+    >
+      <image
+        class="follows-avatar"
+        src="{{item.fromAvatarUrl || defaultAvatar}}"
+        mode="aspectFill"
+        data-openid="{{item.fromOpenid}}"
+        catchtap="onTapAvatar"
+      />
+      <view class="follows-main">
+        <view class="follows-head">
+          <text class="follows-name">{{item.fromNickName}}</text>
+          <text class="follows-action">{{item.actionText}}</text>
+        </view>
+        <view class="follows-time">{{item.timeText}}</view>
+      </view>
+      <view
+        class="follows-btn {{item.iFollow ? 'follows-btn--on' : 'follows-btn--primary'}}"
+        data-openid="{{item.fromOpenid}}"
+        data-ifollow="{{item.iFollow ? 1 : 0}}"
+        catchtap="onTapAction"
+      >{{item.actionBtnText}}</view>
+    </view>
+
+    <view class="follows-empty" wx:if="{{!loading && list.length === 0}}">
+      <image class="follows-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+      <text class="follows-empty-text">{{t.common.noData}}</text>
+    </view>
+    <view class="follows-loading" wx:if="{{loading && list.length > 0}}">{{t.common.loading}}</view>
+    <view
+      class="follows-end"
+      wx:if="{{!loading && list.length > 0 && !hasMore}}"
+    >{{t.message.noMore}}</view>
+  </scroll-view>
+</view>

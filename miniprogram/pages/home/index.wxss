@@ -2,7 +2,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f3f6f2;
+  background: #fff6f0;
   box-sizing: border-box;
   padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
@@ -10,7 +10,7 @@
 .home-nav {
   flex-shrink: 0;
   box-sizing: border-box;
-  background: #f3f6f2;
+  background: #fff6f0;
 }
 
 .home-tabs {
@@ -45,7 +45,7 @@
   height: 6rpx;
   margin-left: -20rpx;
   border-radius: 3rpx;
-  background: #028527;
+  background: #FF6B1A;
 }
 
 .home-scroll {

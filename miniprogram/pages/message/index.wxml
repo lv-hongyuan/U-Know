@@ -1,3 +1,133 @@
 <view class="page message-page">
-  <view class="page-blank">{{t.message.blank}}</view>
+  <view class="message-status" style="height: {{navBarHeight}}px;"></view>
+  <scroll-view
+    class="message-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
+  >
+    <view class="notify-row">
+      <view
+        class="notify-item"
+        hover-class="notify-item--pressed"
+        hover-stay-time="80"
+        data-path="/pages/message/comments/index"
+        data-category="comment"
+        bindtap="onTapModule"
+      >
+        <view class="notify-icon-wrap">
+          <image class="notify-icon" src="/images/notify-comment.svg" mode="aspectFit" />
+          <view class="notify-badge" wx:if="{{badge.comment}}">{{badge.comment}}</view>
+        </view>
+        <text class="notify-title">{{t.message.commentReply}}</text>
+      </view>
+      <view
+        class="notify-item"
+        hover-class="notify-item--pressed"
+        hover-stay-time="80"
+        data-path="/pages/message/likes/index"
+        data-category="like"
+        bindtap="onTapModule"
+      >
+        <view class="notify-icon-wrap">
+          <image class="notify-icon" src="/images/notify-like.svg" mode="aspectFit" />
+          <view class="notify-badge" wx:if="{{badge.like}}">{{badge.like}}</view>
+        </view>
+        <text class="notify-title">{{t.message.likeCollect}}</text>
+      </view>
+      <view
+        class="notify-item"
+        hover-class="notify-item--pressed"
+        hover-stay-time="80"
+        data-path="/pages/message/follows/index"
+        data-category="follow"
+        bindtap="onTapModule"
+      >
+        <view class="notify-icon-wrap">
+          <image class="notify-icon" src="/images/notify-follow.svg" mode="aspectFit" />
+          <view class="notify-badge" wx:if="{{badge.follow}}">{{badge.follow}}</view>
+        </view>
+        <text class="notify-title">{{t.message.followNotify}}</text>
+      </view>
+      <view
+        class="notify-item"
+        hover-class="notify-item--pressed"
+        hover-stay-time="80"
+        data-path="/pages/message/system/index"
+        bindtap="onTapModule"
+      >
+        <view class="notify-icon-wrap">
+          <image class="notify-icon" src="/images/notify-system.svg" mode="aspectFit" />
+        </view>
+        <text class="notify-title">{{t.message.systemNotify}}</text>
+      </view>
+    </view>
+
+    <view class="conv-section">
+      <view class="conv-section-title">{{t.chat.conversations}}</view>
+      <list-skeleton wx:if="{{loadingConvs && conversations.length === 0}}" type="notify" rows="{{5}}" />
+
+      <view class="conv-list" wx:if="{{conversations.length}}">
+        <swipe-cell
+          wx:for="{{conversations}}"
+          wx:key="id"
+          action-width="{{420}}"
+          data-id="{{item.id}}"
+          bind:action="onSwipeAction"
+        >
+          <view
+            class="conv-item"
+            hover-class="conv-item--pressed"
+            hover-stay-time="80"
+            data-id="{{item.id}}"
+            bindtap="onTapConversation"
+          >
+            <view class="conv-avatar-wrap">
+              <image
+                class="conv-avatar"
+                src="{{item.peerAvatarUrl || defaultAvatar}}"
+                mode="aspectFill"
+              />
+              <view class="conv-badge" wx:if="{{item.unreadText}}">{{item.unreadText}}</view>
+            </view>
+            <view class="conv-main">
+              <view class="conv-head">
+                <text class="conv-name">{{item.peerNickName}}</text>
+                <text class="conv-time">{{item.timeText}}</text>
+              </view>
+              <text class="conv-preview">{{item.previewText}}</text>
+            </view>
+          </view>
+          <view slot="actions" class="conv-actions">
+            <view
+              class="conv-action conv-action--unread"
+              data-id="{{item.id}}"
+              data-action="unread"
+              catchtap="onConvAction"
+            >{{t.chat.markUnread}}</view>
+            <view
+              class="conv-action conv-action--hide"
+              data-id="{{item.id}}"
+              data-action="hide"
+              catchtap="onConvAction"
+            >{{t.chat.hide}}</view>
+            <view
+              class="conv-action conv-action--delete"
+              data-id="{{item.id}}"
+              data-action="delete"
+              catchtap="onConvAction"
+            >{{t.chat.deleteChat}}</view>
+          </view>
+        </swipe-cell>
+      </view>
+
+      <view class="conv-empty" wx:if="{{!loadingConvs && conversations.length === 0}}">
+        <image class="conv-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+        <text class="conv-empty-text">{{t.chat.emptyConversations}}</text>
+      </view>
+    </view>
+  </scroll-view>
 </view>

@@ -12,6 +12,17 @@
   >
     <view class="profile-top">
       <view class="profile-header" bindtap="onTapHeader">
+        <view
+          class="profile-school"
+          wx:if="{{loggedIn && showSchool && schoolLabel}}"
+        >
+          <image
+            class="profile-school-icon"
+            src="{{schoolLogoUrl || defaultSchoolLogo}}"
+            mode="aspectFit"
+          />
+          <text class="profile-school-text">{{schoolLabel}}</text>
+        </view>
         <image
           class="profile-avatar {{loggedIn ? '' : 'profile-avatar--guest'}}"
           src="{{avatarUrl}}"
@@ -19,6 +30,11 @@
         />
         <view class="profile-meta">
           <view class="profile-name">{{nickName}}</view>
+          <view
+            class="profile-id"
+            wx:if="{{loggedIn && shortId}}"
+            catchtap="onCopyShortId"
+          >{{t.user.accountId}} {{shortId}}</view>
           <view class="profile-sub {{loggedIn && !bio ? 'profile-sub--muted' : ''}}" wx:if="{{loggedIn}}">{{bio || t.profile.noBio}}</view>
           <view class="profile-sub" wx:else>{{t.profile.tapToLogin}}</view>
         </view>

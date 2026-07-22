@@ -1,0 +1,122 @@
+.follows-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.follows-scroll {
+  flex: 1;
+  height: 0;
+  box-sizing: border-box;
+}
+
+.follows-item {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  box-sizing: border-box;
+  border-bottom: 1rpx solid #edf1ec;
+}
+
+.follows-item--pressed {
+  background: #f7faf6;
+}
+
+.follows-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: #fff6f0;
+  flex-shrink: 0;
+}
+
+.follows-main {
+  flex: 1;
+  min-width: 0;
+  margin: 0 20rpx;
+}
+
+.follows-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8rpx;
+  line-height: 1.35;
+}
+
+.follows-name {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #0f1f16;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.follows-action {
+  font-size: 24rpx;
+  color: #5c6b60;
+  flex-shrink: 0;
+}
+
+.follows-time {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #8a968c;
+  line-height: 1.3;
+}
+
+.follows-btn {
+  flex-shrink: 0;
+  min-width: 128rpx;
+  height: 56rpx;
+  padding: 0 22rpx;
+  border-radius: 28rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.follows-btn--primary {
+  color: #ffffff;
+  background: #FF6B1A;
+}
+
+.follows-btn--on {
+  color: #5c6b60;
+  background: #eef1ec;
+}
+
+.follows-empty,
+.follows-loading,
+.follows-end {
+  padding: 48rpx 32rpx 80rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #8a968c;
+}
+
+.follows-empty {
+  padding-top: 160rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.follows-empty-icon {
+  width: 160rpx;
+  height: 160rpx;
+}
+
+.follows-empty-text {
+  font-size: 26rpx;
+  color: #8a968c;
+  line-height: 1.4;
+}

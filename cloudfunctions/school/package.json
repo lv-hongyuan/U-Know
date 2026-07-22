@@ -1,0 +1,9 @@
+{
+  "name": "school",
+  "version": "1.0.0",
+  "description": "粤港澳高校目录：选校、CRUD、开放状态",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

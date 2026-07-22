@@ -9,6 +9,8 @@ const follows = db.collection("follows");
 
 const DEFAULT_NICK_NAME = "微信用户";
 const DEFAULT_AVATAR = "";
+const SHORT_ID_LEN = 8;
+const SHORT_ID_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 async function ensureCollection(name) {
   try {
@@ -31,6 +33,36 @@ function toCount(value) {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
+function randomShortId() {
+  let id = "";
+  for (let i = 0; i < SHORT_ID_LEN; i += 1) {
+    id += SHORT_ID_CHARS[Math.floor(Math.random() * SHORT_ID_CHARS.length)];
+  }
+  return id;
+}
+
+async function allocateShortId() {
+  await ensureUsersCollection();
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const shortId = randomShortId();
+    const { data } = await users.where({ shortId }).limit(1).get();
+    if (!data || !data.length) return shortId;
+  }
+  return randomShortId() + String(Date.now()).slice(-2);
+}
+
+async function ensureUserShortId(user) {
+  if (!user || !user._id) return user;
+  if (user.shortId && String(user.shortId).length === SHORT_ID_LEN) {
+    return user;
+  }
+  const shortId = await allocateShortId();
+  await users.doc(user._id).update({
+    data: { shortId, updatedAt: db.serverDate() },
+  });
+  return { ...user, shortId };
+}
+
 async function findUserByOpenid(openid) {
   await ensureUsersCollection();
   const { data } = await users.where({ openid }).limit(1).get();
@@ -50,12 +82,100 @@ function formatPublicUser(user) {
   if (!user) return null;
   return {
     openid: user.openid,
+    shortId: user.shortId || "",
     nickName: user.nickName || DEFAULT_NICK_NAME,
     avatarUrl: user.avatarUrl || DEFAULT_AVATAR,
     bio: user.bio || "",
     hometown: user.hometown || "",
+    hometownProvince: user.hometownProvince || "",
+    hometownCity: user.hometownCity || "",
+    schoolId: user.schoolId || "",
+    schoolName: user.schoolName || "",
+    schoolShortName: user.schoolShortName || "",
+    schoolCampus: user.schoolCampus || "",
+    schoolLogoUrl: user.schoolLogoUrl || "",
+    showSchool: user.showSchool !== false,
     followerCount: toCount(user.followerCount),
     followingCount: toCount(user.followingCount),
+    likeCollectCount: toCount(user.likeCollectCount),
+  };
+}
+
+function isCloudFileId(path) {
+  return typeof path === "string" && path.indexOf("cloud://") === 0;
+}
+
+async function resolveCloudFileUrlMap(fileIds) {
+  const ids = Array.from(new Set((fileIds || []).filter(isCloudFileId)));
+  const map = {};
+  if (!ids.length) return map;
+  for (let i = 0; i < ids.length; i += 50) {
+    const chunk = ids.slice(i, i + 50);
+    try {
+      const res = await cloud.getTempFileURL({ fileList: chunk });
+      (res.fileList || []).forEach((item) => {
+        if (item.fileID && item.tempFileURL && item.status === 0) {
+          map[item.fileID] = item.tempFileURL;
+        }
+      });
+    } catch (e) {
+      console.error("resolveCloudFileUrlMap failed", e);
+    }
+  }
+  return map;
+}
+
+async function handleGetPublicProfile(openid, event) {
+  const targetOpenid =
+    typeof event.targetOpenid === "string"
+      ? event.targetOpenid.trim()
+      : typeof event.openid === "string"
+        ? event.openid.trim()
+        : "";
+  if (!targetOpenid) {
+    return { ok: false, error: "MISSING_TARGET" };
+  }
+
+  let user = await findUserByOpenid(targetOpenid);
+  if (!user) {
+    return { ok: false, error: "USER_NOT_FOUND" };
+  }
+  user = await ensureUserShortId(user);
+
+  let following = false;
+  if (openid && openid !== targetOpenid) {
+    const relation = await findFollowRelation(openid, targetOpenid);
+    following = !!relation;
+  }
+
+  const profile = formatPublicUser(user);
+
+  // 校徽：优先用户快照，否则按 schoolId 回查 schools
+  let schoolLogo = profile.schoolLogoUrl || "";
+  if (!schoolLogo && profile.schoolId) {
+    try {
+      const { data: schoolDoc } = await db.collection("schools").doc(profile.schoolId).get();
+      if (schoolDoc && schoolDoc.logoUrl) schoolLogo = schoolDoc.logoUrl;
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const fileIds = [];
+  if (isCloudFileId(profile.avatarUrl)) fileIds.push(profile.avatarUrl);
+  if (isCloudFileId(schoolLogo)) fileIds.push(schoolLogo);
+  if (fileIds.length) {
+    const urlMap = await resolveCloudFileUrlMap(fileIds);
+    if (urlMap[profile.avatarUrl]) profile.avatarUrl = urlMap[profile.avatarUrl];
+    if (urlMap[schoolLogo]) schoolLogo = urlMap[schoolLogo];
+  }
+  profile.schoolLogoUrl = schoolLogo;
+
+  return {
+    ok: true,
+    user: profile,
+    isSelf: openid === targetOpenid,
+    following,
   };
 }
 
@@ -86,6 +206,71 @@ async function buildOpenidSet(docs, field) {
     if (d[field]) set[d[field]] = true;
   });
   return set;
+}
+
+async function pushNotify(fromOpenid, payload) {
+  try {
+    const toOpenid =
+      typeof payload.toOpenid === "string" ? payload.toOpenid.trim() : "";
+    const category =
+      typeof payload.category === "string" ? payload.category.trim() : "";
+    if (!fromOpenid || !toOpenid) return null;
+    if (!["comment", "like", "follow"].includes(category)) return null;
+
+    // 后续可按需打开：自己给自己不发通知
+    // if (toOpenid === fromOpenid) return null;
+
+    const fromUser = await findUserByOpenid(fromOpenid);
+    if (!fromUser) return null;
+
+    await ensureCollection("notifications");
+    const data = {
+      toOpenid,
+      fromOpenid,
+      fromNickName: fromUser.nickName || "微信用户",
+      fromAvatarUrl: fromUser.avatarUrl || "",
+      category,
+      notifyType: payload.notifyType,
+      read: false,
+      createdAt: db.serverDate(),
+    };
+    if (typeof payload.postId === "string" && payload.postId) {
+      data.postId = payload.postId;
+    }
+    if (typeof payload.commentId === "string" && payload.commentId) {
+      data.commentId = payload.commentId;
+    }
+    if (typeof payload.content === "string" && payload.content) {
+      data.content = payload.content.slice(0, 120);
+    }
+
+    await db.collection("notifications").add({ data });
+
+    const target = await findUserByOpenid(toOpenid);
+    if (!target) return null;
+
+    const counts = {
+      comment: Number(target.unreadCommentCount) || 0,
+      like: Number(target.unreadLikeCount) || 0,
+      follow: Number(target.unreadFollowCount) || 0,
+    };
+    counts[category] += 1;
+    const total = counts.comment + counts.like + counts.follow;
+
+    await users.doc(target._id).update({
+      data: {
+        unreadCommentCount: counts.comment,
+        unreadLikeCount: counts.like,
+        unreadFollowCount: counts.follow,
+        unreadNotifyCount: total,
+        updatedAt: db.serverDate(),
+      },
+    });
+    return counts;
+  } catch (e) {
+    console.error("pushNotify failed", e);
+    return null;
+  }
 }
 
 async function handleFollow(openid, targetOpenid) {
@@ -132,6 +317,12 @@ async function handleFollow(openid, targetOpenid) {
       followerCount: _.inc(1),
       updatedAt: db.serverDate(),
     },
+  });
+
+  await pushNotify(openid, {
+    toOpenid: targetOpenid,
+    category: "follow",
+    notifyType: "follow",
   });
 
   return {
@@ -257,12 +448,17 @@ async function handleListRelations(openid, event) {
 
   const total = list.length;
   const page = list.slice(skip, skip + limit);
+  const urlMap = await resolveCloudFileUrlMap(page.map((item) => item.avatarUrl));
+  const resolvedPage = page.map((item) => ({
+    ...item,
+    avatarUrl: urlMap[item.avatarUrl] || item.avatarUrl,
+  }));
 
   return {
     ok: true,
     tab,
     total,
-    list: page,
+    list: resolvedPage,
     hasMore: skip + page.length < total,
   };
 }
@@ -294,6 +490,10 @@ exports.main = async (event) => {
 
   if (type === "listRelations") {
     return handleListRelations(OPENID, event);
+  }
+
+  if (type === "getPublicProfile") {
+    return handleGetPublicProfile(OPENID, event);
   }
 
   return { ok: false, error: "UNKNOWN_TYPE" };

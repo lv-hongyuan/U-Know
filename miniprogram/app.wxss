@@ -1,14 +1,15 @@
 /**app.wxss**/
 page {
-  --brand: #028527;
-  --ink: #0a2e1a;
-  --ink-soft: #14522e;
-  --lime: #a3e635;
-  --bg: #f3f6f2;
+  --brand: #ff6b1a;
+  --ink: #3d1408;
+  --ink-soft: #8b2e0a;
+  --lime: #ffb347;
+  --bg: #fff6f0;
   --surface: #ffffff;
   --text: #0f1f16;
   --text-secondary: #5c6b60;
   --text-muted: #9aa79e;
+  --brand-gradient: linear-gradient(145deg, #ff3b30 0%, #ff6b1a 55%, #ff9500 100%);
 
   background: var(--bg);
   color: var(--text);
@@ -28,7 +29,5 @@ page {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 70vh;
   color: var(--text-muted);
-  font-size: 28rpx;
 }

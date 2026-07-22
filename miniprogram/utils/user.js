@@ -67,10 +67,17 @@ function normalizeUser(user) {
     hometown: user.hometown || "",
     hometownProvince: user.hometownProvince || "",
     hometownCity: user.hometownCity || "",
+    schoolId: user.schoolId || "",
+    schoolName: user.schoolName || "",
+    schoolShortName: user.schoolShortName || "",
+    schoolCampus: user.schoolCampus || "",
+    schoolLogoUrl: user.schoolLogoUrl || "",
+    showSchool: user.showSchool !== false,
     locale: user.locale || "",
     followerCount: Number(user.followerCount) || 0,
     followingCount: Number(user.followingCount) || 0,
     likeCollectCount: Number(user.likeCollectCount) || 0,
+    shortId: user.shortId || "",
   };
 }
 

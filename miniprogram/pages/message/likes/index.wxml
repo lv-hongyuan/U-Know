@@ -1,0 +1,66 @@
+<view class="page likes-page">
+  <scroll-view
+    class="likes-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
+    bindscrolltolower="onLoadMore"
+    lower-threshold="120"
+  >
+    <list-skeleton wx:if="{{loading && list.length === 0}}" type="notify" rows="{{8}}" />
+
+    <view
+      class="likes-item"
+      wx:for="{{list}}"
+      wx:key="id"
+      data-postid="{{item.postId}}"
+      data-missing="{{item.postMissing ? 1 : 0}}"
+      data-commentid="{{item.commentId}}"
+      data-parentid="{{item.parentId}}"
+      data-notifytype="{{item.notifyType}}"
+      data-commentmissing="{{item.commentMissing ? 1 : 0}}"
+      hover-class="likes-item--pressed"
+      hover-stay-time="80"
+      bindtap="onTapCover"
+    >
+      <image
+        class="likes-avatar"
+        src="{{item.fromAvatarUrl || defaultAvatar}}"
+        mode="aspectFill"
+        data-openid="{{item.fromOpenid}}"
+        catchtap="onTapAvatar"
+      />
+      <view class="likes-main">
+        <view class="likes-head">
+          <text class="likes-name">{{item.fromNickName}}</text>
+          <text class="likes-action">{{item.actionText}}</text>
+        </view>
+        <view class="likes-title" wx:if="{{item.previewText}}">{{item.previewText}}</view>
+        <view class="likes-time">{{item.timeText}}</view>
+      </view>
+      <view
+        class="likes-cover-wrap"
+        wx:if="{{item.postCover}}"
+      >
+        <image
+          class="likes-cover"
+          src="{{item.postCover}}"
+          mode="aspectFill"
+        />
+      </view>
+    </view>
+
+    <view class="likes-empty" wx:if="{{!loading && list.length === 0}}">
+      <image class="likes-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+      <text class="likes-empty-text">{{t.common.noData}}</text>
+    </view>
+    <view class="likes-loading" wx:if="{{loading && list.length > 0}}">{{t.common.loading}}</view>
+    <view
+      class="likes-end"
+      wx:if="{{!loading && list.length > 0 && !hasMore}}"
+    >{{t.message.noMore}}</view>
+  </scroll-view>
+</view>

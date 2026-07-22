@@ -28,6 +28,15 @@
   min-height: 140rpx;
 }
 
+.edit-row--switch {
+  padding-right: 24rpx;
+}
+
+.edit-switch {
+  transform: scale(0.9);
+  transform-origin: right center;
+}
+
 .edit-label {
   font-size: 30rpx;
   color: #0f1f16;
@@ -106,6 +115,13 @@
   white-space: nowrap;
 }
 
+.edit-copy-tip {
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  color: #8a968c;
+  flex-shrink: 0;
+}
+
 .edit-value--placeholder {
   color: #9aa79e;
 }
@@ -137,7 +153,7 @@
   box-sizing: border-box;
   padding: 20rpx 24rpx 56rpx;
   border-radius: 20rpx;
-  background: #f3f6f2;
+  background: #fff6f0;
   font-size: 28rpx;
   line-height: 1.55;
   color: #0f1f16;
@@ -153,7 +169,7 @@
   text-align: center;
   padding: 0 20rpx;
   border-radius: 24rpx;
-  background: #028527;
+  background: #FF6B1A;
   color: #ffffff;
   font-size: 24rpx;
   font-weight: 600;
@@ -312,7 +328,7 @@
   text-align: right;
   font-size: 28rpx;
   font-weight: 700;
-  color: #028527;
+  color: #FF6B1A;
 }
 
 .gender-sheet-save--ghost {
@@ -335,7 +351,7 @@
 }
 
 .gender-sheet-item--active {
-  color: #028527;
+  color: #FF6B1A;
 }
 
 .gender-sheet-item--last {
@@ -346,14 +362,14 @@
   margin-left: auto;
   width: 28rpx;
   height: 14rpx;
-  border-left: 4rpx solid #028527;
-  border-bottom: 4rpx solid #028527;
+  border-left: 4rpx solid #FF6B1A;
+  border-bottom: 4rpx solid #FF6B1A;
   transform: rotate(-45deg);
   margin-bottom: 8rpx;
 }
 
 .phone-sheet {
-  background: #f3f6f2;
+  background: #fff6f0;
   border-radius: 40rpx 40rpx 0 0;
   padding: 20rpx 40rpx 8rpx;
 }
@@ -386,7 +402,7 @@
   height: 96rpx;
   line-height: 96rpx;
   border-radius: 48rpx;
-  background: #028527;
+  background: #FF6B1A;
   color: #ffffff;
   font-size: 30rpx;
   font-weight: 600;
@@ -437,7 +453,7 @@
 }
 
 .confirm-btn--cancel {
-  background: #f3f6f2;
+  background: #fff6f0;
   color: #5c6b60;
 }
 
@@ -484,7 +500,7 @@
   line-height: 88rpx;
   text-align: center;
   border-radius: 44rpx;
-  background: #028527;
+  background: #FF6B1A;
   color: #ffffff;
   font-size: 30rpx;
   font-weight: 700;

@@ -120,7 +120,7 @@
 }
 
 .locale-sheet-item--active {
-  color: #028527;
+  color: #FF6B1A;
 }
 
 .locale-sheet-item--last {
@@ -131,8 +131,8 @@
   margin-left: auto;
   width: 28rpx;
   height: 14rpx;
-  border-left: 4rpx solid #028527;
-  border-bottom: 4rpx solid #028527;
+  border-left: 4rpx solid #FF6B1A;
+  border-bottom: 4rpx solid #FF6B1A;
   transform: rotate(-45deg);
   margin-bottom: 8rpx;
 }

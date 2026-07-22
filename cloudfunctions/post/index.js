@@ -8,24 +8,34 @@ const posts = db.collection("posts");
 const users = db.collection("users");
 const follows = db.collection("follows");
 const comments = db.collection("comments");
+const commentLikes = db.collection("comment_likes");
 const postLikes = db.collection("post_likes");
 const postCollects = db.collection("post_collects");
 const postViews = db.collection("post_views");
+const notifications = db.collection("notifications");
 
 const TITLE_MAX = 30;
 const CONTENT_MAX = 1200;
 const TOPIC_MAX_LEN = 10;
 const IMAGE_MAX = 9;
 const COMMENT_MAX = 300;
+const REPLY_PREVIEW = 3;
+const REPLY_EXPAND = 5;
+const COMMENT_IMAGE_MAX = 1;
 
 /**
  * posts
  * { ..., likeCount, commentCount, collectCount, viewCount, createdAt, updatedAt }
  *
- * comments / post_likes / post_collects — 见既有注释
+ * comments / post_likes / post_collects / comment_likes — 见既有注释
+ *
+ * comment_likes 评论点赞
+ * { commentId, postId, openid, createdAt }
  *
  * post_views 浏览去重（一人一帖一条，只计第一次）
  * { postId, openid, createdAt }
+ *
+ * notifications 由本函数直接写入（避免云函数互调 SOURCE 拦截导致丢通知）
  */
 
 async function ensureCollection(name) {
@@ -33,6 +43,86 @@ async function ensureCollection(name) {
     await db.createCollection(name);
   } catch (e) {
     // ignore
+  }
+}
+
+async function findUserByOpenid(openid) {
+  const { data } = await users.where({ openid }).limit(1).get();
+  return data[0] || null;
+}
+
+/** 写入互动通知 + 分类未读；成功返回接收方分类未读，失败返回 null */
+async function pushNotify(fromOpenid, payload) {
+  try {
+    const toOpenid =
+      typeof payload.toOpenid === "string" ? payload.toOpenid.trim() : "";
+    const category =
+      typeof payload.category === "string" ? payload.category.trim() : "";
+    if (!fromOpenid || !toOpenid) return null;
+    if (!["comment", "like", "follow"].includes(category)) return null;
+
+    // 后续可按需打开：自己给自己不发通知
+    // if (toOpenid === fromOpenid) return null;
+
+    const fromUser = await findUserByOpenid(fromOpenid);
+    if (!fromUser) return null;
+
+    await ensureCollection("notifications");
+    const data = {
+      toOpenid,
+      fromOpenid,
+      fromNickName: fromUser.nickName || "微信用户",
+      fromAvatarUrl: fromUser.avatarUrl || "",
+      category,
+      notifyType: payload.notifyType,
+      read: false,
+      createdAt: db.serverDate(),
+    };
+    if (typeof payload.postId === "string" && payload.postId) {
+      data.postId = payload.postId;
+    }
+    if (typeof payload.commentId === "string" && payload.commentId) {
+      data.commentId = payload.commentId;
+    }
+    if (typeof payload.content === "string" && payload.content) {
+      data.content = payload.content.slice(0, 120);
+    }
+    if (typeof payload.originalContent === "string" && payload.originalContent) {
+      data.originalContent = payload.originalContent.slice(0, 120);
+    }
+    if (
+      typeof payload.replyToCommentId === "string" &&
+      payload.replyToCommentId
+    ) {
+      data.replyToCommentId = payload.replyToCommentId;
+    }
+
+    await notifications.add({ data });
+
+    const target = await findUserByOpenid(toOpenid);
+    if (!target) return null;
+
+    const counts = {
+      comment: Number(target.unreadCommentCount) || 0,
+      like: Number(target.unreadLikeCount) || 0,
+      follow: Number(target.unreadFollowCount) || 0,
+    };
+    counts[category] += 1;
+    const total = counts.comment + counts.like + counts.follow;
+
+    await users.doc(target._id).update({
+      data: {
+        unreadCommentCount: counts.comment,
+        unreadLikeCount: counts.like,
+        unreadFollowCount: counts.follow,
+        unreadNotifyCount: total,
+        updatedAt: db.serverDate(),
+      },
+    });
+    return counts;
+  } catch (e) {
+    console.error("pushNotify failed", e);
+    return null;
   }
 }
 
@@ -50,13 +140,14 @@ function extractTopics(content) {
   return Object.keys(set);
 }
 
-async function findUserByOpenid(openid) {
-  const { data } = await users.where({ openid }).limit(1).get();
-  return data[0] || null;
-}
-
 function formatPost(doc) {
   if (!doc) return null;
+  const schoolName = doc.schoolName || "";
+  const schoolCampus = doc.schoolCampus || "";
+  let schoolLabel = "";
+  if (schoolName) {
+    schoolLabel = schoolCampus ? `${schoolName} · ${schoolCampus}` : schoolName;
+  }
   return {
     _id: doc._id,
     openid: doc.openid,
@@ -73,12 +164,35 @@ function formatPost(doc) {
     commentCount: Number(doc.commentCount) || 0,
     collectCount: Number(doc.collectCount) || 0,
     viewCount: Number(doc.viewCount) || 0,
+    attachSchool: !!(doc.schoolId || schoolName),
+    schoolId: doc.schoolId || "",
+    schoolName,
+    schoolShortName: doc.schoolShortName || "",
+    schoolCampus,
+    schoolLabel,
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
   };
 }
 
-function formatComment(doc) {
+function schoolSnapshotFromUser(user, attachSchool) {
+  if (!attachSchool || !user || !user.schoolId || !user.schoolName) {
+    return {
+      schoolId: "",
+      schoolName: "",
+      schoolShortName: "",
+      schoolCampus: "",
+    };
+  }
+  return {
+    schoolId: user.schoolId || "",
+    schoolName: user.schoolName || "",
+    schoolShortName: user.schoolShortName || "",
+    schoolCampus: user.schoolCampus || "",
+  };
+}
+
+function formatComment(doc, liked) {
   if (!doc) return null;
   return {
     _id: doc._id,
@@ -87,8 +201,144 @@ function formatComment(doc) {
     nickName: doc.nickName || "",
     avatarUrl: doc.avatarUrl || "",
     content: doc.content || "",
+    image: doc.image || "",
+    likeCount: Number(doc.likeCount) || 0,
+    liked: !!liked,
+    parentId: doc.parentId || "",
+    replyToOpenid: doc.replyToOpenid || "",
+    replyToNickName: doc.replyToNickName || "",
     createdAt: doc.createdAt || null,
   };
+}
+
+function isCloudFileId(path) {
+  return typeof path === "string" && path.indexOf("cloud://") === 0;
+}
+
+async function resolveCloudFileUrlMap(fileIds) {
+  const ids = Array.from(new Set((fileIds || []).filter(isCloudFileId)));
+  const map = {};
+  if (!ids.length) return map;
+  for (let i = 0; i < ids.length; i += 50) {
+    const chunk = ids.slice(i, i + 50);
+    try {
+      const res = await cloud.getTempFileURL({ fileList: chunk });
+      (res.fileList || []).forEach((item) => {
+        if (item.fileID && item.tempFileURL && item.status === 0) {
+          map[item.fileID] = item.tempFileURL;
+        }
+      });
+    } catch (e) {
+      console.error("resolveCloudFileUrlMap failed", e);
+    }
+  }
+  return map;
+}
+
+function collectCloudFileIdsFromPosts(docs) {
+  const ids = [];
+  (docs || []).forEach((doc) => {
+    if (!doc) return;
+    if (isCloudFileId(doc.avatarUrl)) ids.push(doc.avatarUrl);
+    (doc.images || []).forEach((id) => {
+      if (isCloudFileId(id)) ids.push(id);
+    });
+  });
+  return ids;
+}
+
+function applyUrlMapToPost(doc, urlMap) {
+  const post = formatPost(doc);
+  if (post.avatarUrl && urlMap[post.avatarUrl]) {
+    post.avatarUrl = urlMap[post.avatarUrl];
+  }
+  if (post.images && post.images.length) {
+    post.images = post.images.map((id) => urlMap[id] || id);
+  }
+  return post;
+}
+
+async function formatPostsWithUrls(rawPosts) {
+  const urlMap = await resolveCloudFileUrlMap(collectCloudFileIdsFromPosts(rawPosts));
+  return (rawPosts || []).map((doc) => applyUrlMapToPost(doc, urlMap));
+}
+
+async function formatPostWithUrls(doc) {
+  const list = await formatPostsWithUrls([doc]);
+  return list[0] || formatPost(doc);
+}
+
+function collectCloudFileIdsFromFormattedComments(items) {
+  const ids = [];
+  const walk = (c) => {
+    if (!c) return;
+    if (isCloudFileId(c.avatarUrl)) ids.push(c.avatarUrl);
+    if (isCloudFileId(c.image)) ids.push(c.image);
+  };
+  (items || []).forEach((item) => {
+    walk(item);
+    (item.replies || []).forEach(walk);
+  });
+  return ids;
+}
+
+function applyUrlMapToFormattedComment(comment, urlMap) {
+  if (!comment) return comment;
+  const next = { ...comment };
+  if (next.avatarUrl && urlMap[next.avatarUrl]) {
+    next.avatarUrl = urlMap[next.avatarUrl];
+  }
+  if (next.image && urlMap[next.image]) {
+    next.image = urlMap[next.image];
+  }
+  if (next.replies && next.replies.length) {
+    next.replies = next.replies.map((r) => applyUrlMapToFormattedComment(r, urlMap));
+  }
+  return next;
+}
+
+async function getCommentLikedMap(openid, commentIds) {
+  const map = {};
+  if (!openid || !commentIds || !commentIds.length) return map;
+  await ensureCollection("comment_likes");
+  const ids = commentIds.filter(Boolean);
+  for (let i = 0; i < ids.length; i += 20) {
+    const chunk = ids.slice(i, i + 20);
+    const { data } = await commentLikes
+      .where({ openid, commentId: _.in(chunk) })
+      .limit(20)
+      .get();
+    (data || []).forEach((row) => {
+      if (row.commentId) map[row.commentId] = true;
+    });
+  }
+  return map;
+}
+
+function collectCommentIdsFromList(list) {
+  const ids = [];
+  (list || []).forEach((item) => {
+    if (item && item._id) ids.push(item._id);
+    (item.replies || []).forEach((reply) => {
+      if (reply && reply._id) ids.push(reply._id);
+    });
+  });
+  return ids;
+}
+
+async function attachLikedToCommentList(openid, list) {
+  const likedMap = await getCommentLikedMap(openid, collectCommentIdsFromList(list));
+  const formatted = (list || []).map((item) => ({
+    ...formatComment(item, likedMap[item._id]),
+    replyTotal: item.replyTotal,
+    replies: (item.replies || []).map((reply) =>
+      formatComment(reply, likedMap[reply._id])
+    ),
+  }));
+  const urlMap = await resolveCloudFileUrlMap(
+    collectCloudFileIdsFromFormattedComments(formatted)
+  );
+  return formatted.map((item) => applyUrlMapToFormattedComment(item, urlMap));
 }
 
 function canViewPost(doc, openid) {
@@ -216,6 +466,9 @@ async function handleCreate(openid, event) {
   const checked = validatePostFields(event);
   if (!checked.ok) return checked;
 
+  const attachSchool = event.attachSchool !== false;
+  const schoolSnap = schoolSnapshotFromUser(user, attachSchool);
+
   const now = db.serverDate();
   const payload = {
     openid,
@@ -232,6 +485,7 @@ async function handleCreate(openid, event) {
     commentCount: 0,
     collectCount: 0,
     viewCount: 0,
+    ...schoolSnap,
     createdAt: now,
     updatedAt: now,
   };
@@ -240,7 +494,7 @@ async function handleCreate(openid, event) {
   const addRes = await posts.add({ data: payload });
   return {
     ok: true,
-    post: formatPost({ ...payload, _id: addRes._id }),
+    post: await formatPostWithUrls({ ...payload, _id: addRes._id }),
   };
 }
 
@@ -272,6 +526,8 @@ async function handleUpdate(openid, event) {
   }
 
   const now = db.serverDate();
+  const attachSchool = event.attachSchool !== false;
+  const schoolSnap = schoolSnapshotFromUser(user, attachSchool);
   await posts.doc(postId).update({
     data: {
       title: checked.title,
@@ -281,12 +537,13 @@ async function handleUpdate(openid, event) {
       visibility: checked.visibility,
       nickName: user.nickName || doc.nickName || "微信用户",
       avatarUrl: user.avatarUrl || doc.avatarUrl || "",
+      ...schoolSnap,
       updatedAt: now,
     },
   });
 
   const latest = await getPostDoc(postId);
-  return { ok: true, post: formatPost(latest) };
+  return { ok: true, post: await formatPostWithUrls(latest) };
 }
 
 async function recordUniqueView(postId, openid, doc) {
@@ -372,17 +629,68 @@ async function handleGetDetail(openid, event) {
   }
 
   const viewCount = await recordUniqueView(postId, openid, doc);
-  const [liked, collected] = await Promise.all([
+  const [liked, collected, author] = await Promise.all([
     hasLike(postId, openid),
     hasCollect(postId, openid),
+    findUserByOpenid(doc.openid),
   ]);
+
+  const authorShowSchool = !!(
+    author &&
+    author.showSchool !== false &&
+    (author.schoolShortName || author.schoolName)
+  );
 
   return {
     ok: true,
-    post: formatPost({ ...doc, viewCount }),
+    post: await formatPostWithUrls({ ...doc, viewCount }),
     liked,
     collected,
     isOwner: !!(openid && doc.openid === openid),
+    authorShowSchool,
+    authorSchoolShortName: authorShowSchool
+      ? author.schoolShortName || author.schoolName || ""
+      : "",
+  };
+}
+
+async function handleListUserPublic(openid, event) {
+  const targetOpenid =
+    typeof event.targetOpenid === "string"
+      ? event.targetOpenid.trim()
+      : typeof event.openid === "string"
+        ? event.openid.trim()
+        : "";
+  if (!targetOpenid) {
+    return { ok: false, error: "MISSING_TARGET" };
+  }
+
+  await ensureCollection("posts");
+  const skip = Math.max(0, Number(event.skip) || 0);
+  const limit = Math.min(20, Math.max(1, Number(event.limit) || 10));
+
+  const { data } = await posts
+    .where({ openid: targetOpenid, status: "published" })
+    .limit(200)
+    .get();
+
+  let list = (data || [])
+    .filter((d) => d.visibility !== "private")
+    .slice()
+    .sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+
+  const total = list.length;
+  const page = list.slice(skip, skip + limit);
+
+  return {
+    ok: true,
+    list: await formatPostsWithUrls(page),
+    hasMore: skip + page.length < total,
+    total,
   };
 }
 
@@ -428,7 +736,7 @@ async function handleListMine(openid, event) {
 
   return {
     ok: true,
-    list: page.map(formatPost),
+    list: await formatPostsWithUrls(page),
     hasMore: skip + page.length < total,
     total,
     publicCount,
@@ -471,7 +779,7 @@ async function handleListCollected(openid, event) {
 
   return {
     ok: true,
-    list: page.map(formatPost),
+    list: await formatPostsWithUrls(page),
     hasMore: skip + page.length < total,
     total,
   };
@@ -510,7 +818,7 @@ async function handleListFeed(openid, event) {
   return {
     ok: true,
     feed,
-    list: page.map(formatPost),
+    list: await formatPostsWithUrls(page),
     hasMore: skip + page.length < total,
     total,
   };
@@ -551,7 +859,17 @@ async function handleToggleLike(openid, event) {
   });
   // 获赞与收藏：含自己给自己点赞；取消不减
   await bumpAuthorLikeCollect(doc.openid);
-  return { ok: true, liked: true, likeCount: next };
+  const unreadByCategory = await pushNotify(openid, {
+    toOpenid: doc.openid,
+    category: "like",
+    notifyType: "post_like",
+    postId,
+  });
+  const res = { ok: true, liked: true, likeCount: next };
+  if (doc.openid === openid && unreadByCategory) {
+    res.unreadByCategory = unreadByCategory;
+  }
+  return res;
 }
 
 async function handleToggleCollect(openid, event) {
@@ -589,7 +907,17 @@ async function handleToggleCollect(openid, event) {
   });
   // 获赞与收藏：含自己收藏；取消不减
   await bumpAuthorLikeCollect(doc.openid);
-  return { ok: true, collected: true, collectCount: next };
+  const unreadByCategory = await pushNotify(openid, {
+    toOpenid: doc.openid,
+    category: "like",
+    notifyType: "collect",
+    postId,
+  });
+  const res = { ok: true, collected: true, collectCount: next };
+  if (doc.openid === openid && unreadByCategory) {
+    res.unreadByCategory = unreadByCategory;
+  }
+  return res;
 }
 
 async function handleCreateComment(openid, event) {
@@ -605,7 +933,11 @@ async function handleCreateComment(openid, event) {
   }
 
   const content = typeof event.content === "string" ? event.content.trim() : "";
-  if (!content) {
+  let image = typeof event.image === "string" ? event.image.trim() : "";
+  if (!image && Array.isArray(event.images) && event.images[0]) {
+    image = String(event.images[0]).trim();
+  }
+  if (!content && !image) {
     return { ok: false, error: "EMPTY_COMMENT", message: "请输入评论" };
   }
   if (content.length > COMMENT_MAX) {
@@ -613,6 +945,57 @@ async function handleCreateComment(openid, event) {
   }
 
   await ensureCollection("comments");
+  const parentId =
+    typeof event.parentId === "string" ? event.parentId.trim() : "";
+  let replyToOpenid =
+    typeof event.replyToOpenid === "string" ? event.replyToOpenid.trim() : "";
+  let replyToNickName =
+    typeof event.replyToNickName === "string"
+      ? event.replyToNickName.trim()
+      : "";
+  let replyToCommentId =
+    typeof event.replyToCommentId === "string"
+      ? event.replyToCommentId.trim()
+      : "";
+
+  let parent = null;
+  let originalDoc = null;
+  if (parentId) {
+    try {
+      const { data } = await comments.doc(parentId).get();
+      parent = data || null;
+    } catch (e) {
+      parent = null;
+    }
+    if (
+      !parent ||
+      parent.postId !== postId ||
+      parent.status !== "published" ||
+      parent.parentId
+    ) {
+      return { ok: false, error: "PARENT_NOT_FOUND", message: "回复目标不存在" };
+    }
+    if (!replyToOpenid) replyToOpenid = parent.openid || "";
+    if (!replyToNickName) replyToNickName = parent.nickName || "";
+    if (!replyToCommentId) replyToCommentId = parentId;
+
+    originalDoc = parent;
+    if (replyToCommentId && replyToCommentId !== parentId) {
+      try {
+        const { data } = await comments.doc(replyToCommentId).get();
+        if (
+          data &&
+          data.postId === postId &&
+          data.status === "published"
+        ) {
+          originalDoc = data;
+        }
+      } catch (e) {
+        // keep parent as original
+      }
+    }
+  }
+
   const now = db.serverDate();
   const payload = {
     postId,
@@ -620,21 +1003,142 @@ async function handleCreateComment(openid, event) {
     nickName: user.nickName || "微信用户",
     avatarUrl: user.avatarUrl || "",
     content,
+    image,
+    likeCount: 0,
     status: "published",
     createdAt: now,
     updatedAt: now,
   };
+  if (parentId) {
+    payload.parentId = parentId;
+    payload.replyToOpenid = replyToOpenid;
+    payload.replyToNickName = replyToNickName;
+    payload.replyToCommentId = replyToCommentId || parentId;
+  }
   const addRes = await comments.add({ data: payload });
   const next = (Number(doc.commentCount) || 0) + 1;
   await posts.doc(postId).update({
     data: { commentCount: next, updatedAt: now },
   });
 
-  return {
+  const commentId = addRes._id;
+  let notifyTo = "";
+  let unreadByCategory = null;
+  if (parentId && replyToOpenid) {
+    let originalContent = String((originalDoc && originalDoc.content) || "").trim();
+    if (!originalContent && originalDoc && originalDoc.image) {
+      originalContent = "[图片]";
+    }
+    notifyTo = replyToOpenid;
+    unreadByCategory = await pushNotify(openid, {
+      toOpenid: replyToOpenid,
+      category: "comment",
+      notifyType: "reply",
+      postId,
+      commentId,
+      content,
+      originalContent,
+      replyToCommentId: replyToCommentId || parentId,
+    });
+  } else if (doc.openid) {
+    notifyTo = doc.openid;
+    unreadByCategory = await pushNotify(openid, {
+      toOpenid: doc.openid,
+      category: "comment",
+      notifyType: "comment",
+      postId,
+      commentId,
+      content,
+    });
+  }
+
+  const comment = formatComment({ ...payload, _id: commentId }, false);
+  const urlMap = await resolveCloudFileUrlMap(
+    collectCloudFileIdsFromFormattedComments([comment])
+  );
+  const res = {
     ok: true,
-    comment: formatComment({ ...payload, _id: addRes._id }),
+    comment: applyUrlMapToFormattedComment(comment, urlMap),
     commentCount: next,
   };
+  if (notifyTo === openid && unreadByCategory) {
+    res.unreadByCategory = unreadByCategory;
+  }
+  return res;
+}
+
+async function handleToggleCommentLike(openid, event) {
+  const user = await findUserByOpenid(openid);
+  if (!user || !user.phoneNumber) {
+    return { ok: false, error: "USER_NOT_FOUND", message: "请先登录" };
+  }
+
+  const postId = event.postId || event.id;
+  const commentId =
+    typeof event.commentId === "string" ? event.commentId.trim() : "";
+  if (!commentId) {
+    return { ok: false, error: "INVALID_COMMENT", message: "缺少评论 ID" };
+  }
+
+  const postDoc = await getPostDoc(postId);
+  if (!canViewPost(postDoc, openid)) {
+    return { ok: false, error: "NOT_FOUND", message: "帖子不存在" };
+  }
+
+  await ensureCollection("comments");
+  let commentDoc = null;
+  try {
+    const { data } = await comments.doc(commentId).get();
+    commentDoc = data || null;
+  } catch (e) {
+    commentDoc = null;
+  }
+  if (
+    !commentDoc ||
+    commentDoc.postId !== postId ||
+    commentDoc.status !== "published"
+  ) {
+    return { ok: false, error: "COMMENT_NOT_FOUND", message: "评论不存在" };
+  }
+
+  await ensureCollection("comment_likes");
+  const { data } = await commentLikes
+    .where({ commentId, openid })
+    .limit(1)
+    .get();
+  const existing = data && data[0];
+
+  if (existing) {
+    await commentLikes.doc(existing._id).remove();
+    const next = Math.max(0, (Number(commentDoc.likeCount) || 0) - 1);
+    await comments.doc(commentId).update({
+      data: { likeCount: next, updatedAt: db.serverDate() },
+    });
+    return { ok: true, liked: false, likeCount: next };
+  }
+
+  await commentLikes.add({
+    data: { commentId, postId, openid, createdAt: db.serverDate() },
+  });
+  const next = (Number(commentDoc.likeCount) || 0) + 1;
+  await comments.doc(commentId).update({
+    data: { likeCount: next, updatedAt: db.serverDate() },
+  });
+  await bumpAuthorLikeCollect(commentDoc.openid);
+  const commentSnippet = String(commentDoc.content || "").trim();
+  const unreadByCategory = await pushNotify(openid, {
+    toOpenid: commentDoc.openid,
+    category: "like",
+    notifyType: "comment_like",
+    postId,
+    commentId,
+    content: commentSnippet || (commentDoc.image ? "[图片]" : ""),
+  });
+  const res = { ok: true, liked: true, likeCount: next };
+  if (commentDoc.openid === openid && unreadByCategory) {
+    res.unreadByCategory = unreadByCategory;
+  }
+  return res;
 }
 
 async function handleListComments(openid, event) {
@@ -653,22 +1157,128 @@ async function handleListComments(openid, event) {
     .limit(200)
     .get();
 
-  const list = (data || [])
-    .slice()
-    .sort((a, b) => {
-      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return ta - tb;
-    });
+  const sortByTime = (a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return ta - tb;
+  };
 
-  const total = list.length;
-  const page = list.slice(skip, skip + limit);
+  const all = (data || []).slice().sort(sortByTime);
+  const replyMap = {};
+  const topLevel = [];
+
+  all.forEach((doc) => {
+    if (doc.parentId) {
+      if (!replyMap[doc.parentId]) replyMap[doc.parentId] = [];
+      replyMap[doc.parentId].push(doc);
+    } else {
+      topLevel.push(doc);
+    }
+  });
+
+  Object.keys(replyMap).forEach((key) => {
+    replyMap[key].sort(sortByTime);
+  });
+
+  const total = topLevel.length;
+  const pageRaw = topLevel.slice(skip, skip + limit).map((doc) => {
+    const allReplies = replyMap[doc._id] || [];
+    return {
+      ...doc,
+      replyTotal: allReplies.length,
+      replies: allReplies.slice(0, REPLY_PREVIEW),
+    };
+  });
+  const page = await attachLikedToCommentList(openid, pageRaw);
 
   return {
     ok: true,
-    list: page.map(formatComment),
+    list: page,
     hasMore: skip + page.length < total,
     total,
+  };
+}
+
+async function handleListReplies(openid, event) {
+  const postId = event.postId || event.id;
+  const parentId =
+    typeof event.parentId === "string" ? event.parentId.trim() : "";
+  const doc = await getPostDoc(postId);
+  if (!canViewPost(doc, openid)) {
+    return { ok: false, error: "NOT_FOUND", message: "帖子不存在" };
+  }
+  if (!parentId) {
+    return { ok: false, error: "INVALID_PARENT", message: "缺少评论 ID" };
+  }
+
+  let parent = null;
+  await ensureCollection("comments");
+  try {
+    const { data } = await comments.doc(parentId).get();
+    parent = data || null;
+  } catch (e) {
+    parent = null;
+  }
+  if (
+    !parent ||
+    parent.postId !== postId ||
+    parent.status !== "published" ||
+    parent.parentId
+  ) {
+    return { ok: false, error: "PARENT_NOT_FOUND", message: "评论不存在" };
+  }
+
+  const skip = Math.max(0, Number(event.skip) || 0);
+  const untilId =
+    typeof event.untilId === "string" ? event.untilId.trim() : "";
+  // untilId：一次取到目标回复为止（含目标），上限 100，避免详情定位多次往返
+  const FOCUS_REPLY_CAP = 100;
+  const limit = untilId
+    ? FOCUS_REPLY_CAP
+    : Math.min(20, Math.max(1, Number(event.limit) || REPLY_EXPAND));
+
+  const { data } = await comments
+    .where({ postId, parentId, status: "published" })
+    .limit(200)
+    .get();
+
+  const sortByTime = (a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return ta - tb;
+  };
+
+  const all = (data || []).slice().sort(sortByTime);
+  const total = all.length;
+
+  let pageRaw;
+  let found = false;
+  if (untilId) {
+    const idx = all.findIndex((item) => item._id === untilId);
+    if (idx < 0) {
+      pageRaw = [];
+      found = false;
+    } else {
+      found = idx < FOCUS_REPLY_CAP;
+      pageRaw = all.slice(0, Math.min(idx + 1, FOCUS_REPLY_CAP));
+    }
+  } else {
+    pageRaw = all.slice(skip, skip + limit);
+  }
+
+  const page = await attachLikedToCommentList(
+    openid,
+    pageRaw.map((doc) => ({ ...doc }))
+  );
+
+  return {
+    ok: true,
+    list: page,
+    hasMore: untilId
+      ? page.length < total
+      : skip + page.length < total,
+    total,
+    found: untilId ? found : undefined,
   };
 }
 
@@ -698,6 +1308,9 @@ exports.main = async (event = {}) => {
   if (action === "listMine") {
     return handleListMine(OPENID, event);
   }
+  if (action === "listUserPublic") {
+    return handleListUserPublic(OPENID, event);
+  }
   if (action === "listCollected") {
     return handleListCollected(OPENID, event);
   }
@@ -712,6 +1325,12 @@ exports.main = async (event = {}) => {
   }
   if (action === "listComments") {
     return handleListComments(OPENID, event);
+  }
+  if (action === "listReplies") {
+    return handleListReplies(OPENID, event);
+  }
+  if (action === "toggleCommentLike") {
+    return handleToggleCommentLike(OPENID, event);
   }
 
   return {

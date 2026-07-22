@@ -1,0 +1,82 @@
+---
+description: List data loading must switch UI first, show skeleton, then fetch
+globs: miniprogram/pages/**/*.{wxml,js,json}
+alwaysApply: true
+---
+
+# 列表：先切 UI → 骨架屏 → 再请求
+
+凡**切换 Tab / 筛选 / 搜索条件**或**重置加载**（含首次进入、下拉刷新）的数据列表，禁止「等请求完成再换内容」。用户应立刻看到新状态与骨架屏。
+
+## 交互顺序（强制）
+
+1. **立即更新 UI 状态**（`mainTab` / `postFilter` / `feed` / `tab` / keyword 等）。
+2. **立刻清空当前列表**并 `loading: true`（出骨架屏）。
+3. **发起请求**；返回后写入列表并关 loading。
+4. 加载更多（非 reset）：保留已有列表，仅底部 loading 文案，不出整页骨架。
+
+```js
+// ✅ reset：先切状态，再清空 + 骨架，再请求
+this.setData({ postFilter: filter }); // 或 tab / feed …
+this.loadList({ reset: true });
+
+async loadList({ reset }) {
+  if (!reset && (this.data.loading || !this.data.hasMore)) return;
+  const reqId = (this._listReqId = (this._listReqId || 0) + 1);
+  if (reset) {
+    this.setData({ list: [], hasMore: true, loading: true });
+  } else {
+    this.setData({ loading: true });
+  }
+  try {
+    const result = await fetchPage(/* … */);
+    if (reqId !== this._listReqId) return; // 丢弃过期响应
+    this.setData({ list: …, hasMore: …, loading: false });
+  } catch (e) {
+    if (reqId !== this._listReqId) return;
+    this.setData({ loading: false, ...(reset ? { list: [], hasMore: false } : {}) });
+  }
+}
+```
+
+```js
+// ❌ BAD — reset 时因 loading 直接 return，或不清空旧列表
+if (this.data.loading) return;
+this.setData({ loading: true }); // 旧 list 仍显示，像「请求完才切换」
+```
+
+## 骨架屏组件
+
+使用 `miniprogram/components/list-skeleton`，按列表形态选 `type`：
+
+| type | 场景 |
+|------|------|
+| `waterfall` | 双列帖子流（已内嵌在 `post-waterfall`：`loading && 空列表`） |
+| `notify` | 消息赞/评等（头像 + 文案 + 可选封面） |
+| `relation` | 关注关系 / 粉丝关注通知（头像 + 文案 + 按钮） |
+| `school` | 学校选择列表 |
+
+```xml
+<!-- ✅ 行列表 -->
+<list-skeleton wx:if="{{loading && list.length === 0}}" type="notify" rows="{{8}}" />
+<!-- 空状态仅在 !loading && 空 -->
+<view wx:if="{{!loading && list.length === 0}}">…empty…</view>
+<!-- 加载更多文案 -->
+<view wx:if="{{loading && list.length > 0}}">{{t.common.loading}}</view>
+```
+
+瀑布流页只需继续用 `<post-waterfall loading="{{loading}}" list="{{list}}" />`，骨架已内置，不必再包一层。
+
+## 并发与过期
+
+- **reset 必须可打断**进行中的请求：用 `_listReqId`（或同等序号），过期响应勿 `setData`。
+- 快速连点 Tab / 筛选时：以最后一次条件为准。
+- 下拉刷新走 `reset: true`（清空 + 骨架）；`refreshing` 在 finally / 成功路径关闭。
+
+## 新建列表页 checklist
+
+- [ ] Tab/筛选：先 `setData` 状态，再 `loadList({ reset: true })`
+- [ ] reset 清空 list + `loading: true`；非 reset 不整页骨架
+- [ ] `_listReqId` 防过期写入
+- [ ] 注册并使用对应 `list-skeleton`（或 post-waterfall）
+- [ ] 空状态 / 加载更多文案走 i18n；骨架无文案

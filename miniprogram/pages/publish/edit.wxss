@@ -2,7 +2,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0a2e1a;
+  background: #3d1408;
   box-sizing: border-box;
 }
 
@@ -22,7 +22,7 @@
 }
 
 .edit-media-tools {
-  background: #f3f6f2;
+  background: #fff6f0;
   border-radius: 32rpx 32rpx 0 0;
   padding: 8rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
 }
@@ -41,7 +41,7 @@
 }
 
 .edit-media-tab--active {
-  color: #028527;
+  color: #FF6B1A;
   position: relative;
 }
 
@@ -54,7 +54,7 @@
   height: 6rpx;
   margin-left: -20rpx;
   border-radius: 3rpx;
-  background: #028527;
+  background: #FF6B1A;
 }
 
 .edit-media-actions {
@@ -68,7 +68,7 @@
   line-height: 88rpx;
   text-align: center;
   border-radius: 44rpx;
-  background: #028527;
+  background: #FF6B1A;
   color: #ffffff;
   font-size: 30rpx;
   font-weight: 700;

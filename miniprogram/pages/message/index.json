@@ -1,4 +1,8 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "消息"
+  "usingComponents": {
+    "list-skeleton": "/components/list-skeleton/index",
+    "swipe-cell": "/components/swipe-cell/index"
+  },
+  "navigationStyle": "custom",
+  "backgroundColor": "#FFF6F0"
 }

@@ -12,8 +12,8 @@ function buildList() {
     {
       pagePath: "/pages/explore/index",
       text: t("tab.explore"),
-      icon: "/images/tab/explore.svg",
-      iconActive: "/images/tab/explore-active.svg",
+      icon: "/images/tab/shop.svg",
+      iconActive: "/images/tab/shop-active.svg",
     },
     {
       pagePath: "/pages/publish/index",
@@ -42,6 +42,7 @@ Component({
     list: buildList(),
     showPublishSheet: false,
     t: getI18nData(),
+    messageBadge: "",
   },
 
   lifetimes: {

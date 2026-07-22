@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  background: #f3f6f2;
+  background: #fff6f0;
 }
 
 .profile-scroll {
@@ -21,10 +21,11 @@
   position: relative;
   display: flex;
   align-items: center;
-  padding: 40rpx 36rpx;
-  background: linear-gradient(145deg, #0a2e1a 0%, #14522e 55%, #028527 100%);
+  padding: 48rpx 36rpx 40rpx;
+  background: linear-gradient(145deg, #3d1408 0%, #8b2e0a 55%, #FF6B1A 100%);
   border-radius: 32rpx;
-  box-shadow: 0 16rpx 40rpx rgba(10, 46, 26, 0.18);
+  box-shadow: 0 16rpx 40rpx rgba(61, 20, 8, 0.18);
+  overflow: hidden;
 }
 
 .profile-avatar {
@@ -56,6 +57,50 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.profile-school {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  max-width: 78%;
+  height: 44rpx;
+  padding: 0 16rpx 0 20rpx;
+  border-radius: 0 0 18rpx 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-right: 1rpx solid rgba(255, 255, 255, 0.22);
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.22);
+  box-sizing: border-box;
+}
+
+.profile-school-icon {
+  width: 28rpx;
+  height: 28rpx;
+  flex-shrink: 0;
+  border-radius: 6rpx;
+  background: #ffffff;
+}
+
+.profile-school-text {
+  min-width: 0;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-id {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.35;
 }
 
 .profile-sub {
@@ -127,60 +172,71 @@
 }
 
 .profile-content {
-  margin-top: 8rpx;
+  margin-top: 20rpx;
 }
 
 .profile-tabs {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 56rpx;
-  padding: 20rpx 24rpx 8rpx;
+  justify-content: flex-start;
+  width: fit-content;
+  max-width: calc(100% - 64rpx);
+  gap: 4rpx;
+  margin: 0 32rpx;
+  padding: 8rpx 10rpx 14rpx;
+  background: linear-gradient(180deg, #ffdcc4 0%, #ffe8d9 42%, #fff6f0 100%);
+  border-radius: 28rpx 28rpx 0 28rpx;
+  box-sizing: border-box;
 }
 
 .profile-tab {
   position: relative;
-  padding: 12rpx 4rpx 16rpx;
-  font-size: 30rpx;
-  color: #8a968c;
+  min-width: 120rpx;
+  min-height: 64rpx;
+  padding: 0 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: #9a6b52;
   font-weight: 600;
+  line-height: 1;
+  border-radius: 999rpx;
+  background: transparent;
+  box-sizing: border-box;
 }
 
 .profile-tab--active {
-  color: #0f1f16;
+  color: #ffffff;
   font-weight: 700;
-}
-
-.profile-tab--active::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 36rpx;
-  height: 6rpx;
-  margin-left: -18rpx;
-  border-radius: 3rpx;
-  background: #028527;
+  background: linear-gradient(135deg, #ff6b1a 0%, #ff3b30 100%);
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 26, 0.28);
 }
 
 .profile-filters {
   display: flex;
   align-items: center;
-  gap: 28rpx;
-  padding: 8rpx 28rpx 16rpx;
+  gap: 12rpx;
+  padding: 20rpx 32rpx 16rpx;
 }
 
 .profile-filter {
   display: flex;
   align-items: center;
   gap: 6rpx;
+  min-height: 52rpx;
+  padding: 0 20rpx;
   font-size: 24rpx;
-  color: #8a968c;
+  color: #9a6b52;
   font-weight: 600;
+  border-radius: 999rpx;
+  background: transparent;
+  box-sizing: border-box;
 }
 
 .profile-filter--active {
-  color: #0f1f16;
+  color: #3d1408;
+  background: rgba(255, 107, 26, 0.12);
 }
 
 .profile-filter-lock {
@@ -225,7 +281,7 @@
   justify-content: center;
   padding: 24rpx;
   box-sizing: border-box;
-  background: linear-gradient(145deg, #0a2e1a 0%, #14522e 55%, #028527 100%);
+  background: linear-gradient(145deg, #3d1408 0%, #8b2e0a 55%, #FF6B1A 100%);
   color: #ffffff;
   font-size: 26rpx;
   font-weight: 700;
@@ -272,7 +328,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 20rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
-  background: #f3f6f2;
+  background: #fff6f0;
   border-radius: 40rpx 40rpx 0 0;
 }
 
@@ -304,7 +360,7 @@
   height: 96rpx;
   line-height: 96rpx;
   border-radius: 48rpx;
-  background: #028527;
+  background: #FF6B1A;
   color: #ffffff;
   font-size: 30rpx;
   font-weight: 600;

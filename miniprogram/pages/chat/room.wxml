@@ -1,0 +1,291 @@
+<view class="page room-page" style="height: {{pageHeight}}px;">
+  <view class="room-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="room-nav-inner" style="height: {{navBarHeight}}px;">
+      <view class="room-nav-back" bindtap="onBack">
+        <image class="room-nav-back-icon" src="/images/nav-back.svg" mode="aspectFit" />
+      </view>
+      <view class="room-nav-peer" bindtap="onTapPeer">
+        <image
+          class="room-nav-avatar"
+          src="{{peerAvatarUrl || defaultAvatar}}"
+          mode="aspectFill"
+        />
+        <text class="room-nav-name">{{peerNickName}}</text>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view
+    class="room-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation
+    bindscrolltoupper="onScrollToUpper"
+    upper-threshold="80"
+  >
+    <view class="room-scroll-inner">
+      <view class="room-top-space" style="height: {{topSpace}}px;"></view>
+      <view class="room-msgs">
+      <view class="room-loading" wx:if="{{loadingMore}}">{{t.common.loading}}</view>
+      <list-skeleton wx:if="{{loading && list.length === 0}}" type="notify" rows="{{6}}" />
+
+      <block wx:for="{{list}}" wx:key="id">
+        <view class="room-time" wx:if="{{item.showTime}}">
+          <text class="room-time-text">{{item.timeLabel}}</text>
+        </view>
+
+        <view class="room-recalled" wx:if="{{item.status === 'recalled'}}" id="msg-{{item.id}}">
+          <text>{{t.chat.recalled}}</text>
+        </view>
+
+        <view
+          wx:else
+          id="msg-{{item.id}}"
+          class="room-row {{item.mine ? 'room-row--mine' : 'room-row--peer'}}"
+        >
+          <image
+            class="room-avatar"
+            src="{{peerAvatarUrl || defaultAvatar}}"
+            mode="aspectFill"
+            wx:if="{{!item.mine}}"
+          />
+
+          <view
+            class="room-bubble-wrap"
+            data-id="{{item.id}}"
+            bindlongpress="onLongPressMsg"
+          >
+            <!-- 文本气泡（含引用） -->
+            <view
+              class="room-bubble {{item.mine ? 'room-bubble--mine' : ''}}"
+              wx:if="{{item.type === 'text' && !item.pending}}"
+            >
+              <view class="room-quote" wx:if="{{item.quote}}">
+                <image
+                  wx:if="{{item.quote.thumbUrl && item.quote.type === 'image'}}"
+                  class="room-quote-thumb"
+                  src="{{item.quote.thumbUrl}}"
+                  mode="aspectFill"
+                />
+                <view
+                  wx:elif="{{item.quote.thumbUrl && item.quote.type === 'video'}}"
+                  class="room-quote-thumb room-quote-thumb--video"
+                >
+                  <image class="room-quote-thumb-img" src="{{item.quote.thumbUrl}}" mode="aspectFill" />
+                  <view class="room-quote-play"></view>
+                </view>
+                <view
+                  wx:elif="{{item.quote.type === 'image' || item.quote.type === 'video'}}"
+                  class="room-quote-thumb room-quote-thumb--ph"
+                >
+                  <image
+                    class="room-quote-ph-icon"
+                    src="{{item.quote.type === 'video' ? '/images/video.svg' : '/images/image.svg'}}"
+                    mode="aspectFit"
+                  />
+                </view>
+                <text class="room-quote-text">{{item.quote.preview}}</text>
+              </view>
+              <text class="room-bubble-text">{{item.content}}</text>
+            </view>
+
+            <!-- 发送中媒体 -->
+            <view
+              wx:elif="{{item.pending}}"
+              class="room-media-pending room-media-pending--{{item.type}}"
+            >
+              <image
+                wx:if="{{item.type === 'image'}}"
+                class="room-media-pending-img"
+                src="{{item.localPath}}"
+                mode="aspectFill"
+              />
+              <view wx:else class="room-media-pending-video">
+                <image
+                  wx:if="{{item.localPath}}"
+                  class="room-media-pending-img"
+                  src="{{item.localPath}}"
+                  mode="aspectFill"
+                />
+              </view>
+              <view class="room-media-pending-mask">
+                <view class="room-progress" wx:if="{{!item.sendFailed}}">
+                  <view class="room-progress-track">
+                    <view class="room-progress-bar" style="width: {{item.progress}}%;"></view>
+                  </view>
+                  <text class="room-progress-text">{{item.progress}}%</text>
+                </view>
+                <text class="room-media-failed" wx:else>{{t.chat.sendFailed}}</text>
+              </view>
+            </view>
+
+            <!-- 图片 -->
+            <image
+              wx:elif="{{item.type === 'image'}}"
+              class="room-media-image"
+              src="{{item.media.fileId}}"
+              mode="widthFix"
+              data-url="{{item.media.fileId}}"
+              bindtap="onPreviewImage"
+            />
+
+            <!-- 视频 -->
+            <video
+              wx:elif="{{item.type === 'video'}}"
+              class="room-media-video"
+              src="{{item.media.fileId}}"
+              controls
+              object-fit="contain"
+            />
+
+            <!-- 帖子卡片 -->
+            <view
+              wx:elif="{{item.type === 'post' && item.postCard}}"
+              class="room-post-card"
+              data-id="{{item.postCard.postId}}"
+              bindtap="onTapPostCard"
+            >
+              <image
+                class="room-post-cover"
+                src="{{item.postCard.coverUrl || '/images/empty.svg'}}"
+                mode="aspectFill"
+              />
+              <view class="room-post-body">
+                <text class="room-post-title">{{item.postCard.title}}</text>
+                <view class="room-post-meta">
+                  <image
+                    class="room-post-avatar"
+                    src="{{item.postCard.authorAvatarUrl || defaultAvatar}}"
+                    mode="aspectFill"
+                  />
+                  <text class="room-post-nick">{{item.postCard.authorNickName}}</text>
+                  <view class="room-post-like">
+                    <image class="room-post-like-icon" src="/images/heart-outline.svg" mode="aspectFit" />
+                    <text>{{item.postCard.likeCount}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <image
+            class="room-avatar"
+            src="{{myAvatarUrl || defaultAvatar}}"
+            mode="aspectFill"
+            wx:if="{{item.mine}}"
+          />
+        </view>
+      </block>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view
+    class="room-composer"
+    style="padding-bottom: {{keyboardHeight ? 0 : safeBottom}}px;"
+  >
+    <view class="room-quote-bar" wx:if="{{quote}}">
+      <image
+        wx:if="{{quote.thumbUrl && quote.type === 'image'}}"
+        class="room-quote-bar-thumb"
+        src="{{quote.thumbUrl}}"
+        mode="aspectFill"
+      />
+      <view
+        wx:elif="{{quote.thumbUrl && quote.type === 'video'}}"
+        class="room-quote-bar-thumb room-quote-bar-thumb--video"
+      >
+        <image class="room-quote-thumb-img" src="{{quote.thumbUrl}}" mode="aspectFill" />
+        <view class="room-quote-play room-quote-play--sm"></view>
+      </view>
+      <view
+        wx:elif="{{quote.type === 'image' || quote.type === 'video'}}"
+        class="room-quote-bar-thumb room-quote-thumb--ph"
+      >
+        <image
+          class="room-quote-ph-icon"
+          src="{{quote.type === 'video' ? '/images/video.svg' : '/images/image.svg'}}"
+          mode="aspectFit"
+        />
+      </view>
+      <text class="room-quote-bar-text">{{t.chat.quoting}} {{quote.preview}}</text>
+      <view class="room-quote-bar-close" bindtap="clearQuote">×</view>
+    </view>
+
+    <view class="room-composer-row">
+      <view class="room-tool" bindtap="toggleEmoji">☺</view>
+      <view class="room-input-wrap">
+        <input
+          class="room-input"
+          value="{{inputValue}}"
+          confirm-type="send"
+          adjust-position="{{false}}"
+          hold-keyboard
+          bindinput="onInput"
+          bindfocus="onFocus"
+          bindblur="onBlur"
+          bindkeyboardheightchange="onKeyboardHeight"
+          bindconfirm="onSendText"
+          placeholder="{{t.chat.inputPlaceholder}}"
+        />
+        <view
+          class="room-input-plus"
+          wx:if="{{!inputFocused}}"
+          catchtap="togglePlus"
+        >＋</view>
+      </view>
+      <view
+        class="room-send {{inputValue ? 'room-send--on' : ''}}"
+        bindtap="onSendText"
+      >{{t.chat.send}}</view>
+    </view>
+
+    <view class="room-emoji" wx:if="{{showEmoji}}">
+      <view
+        class="room-emoji-item"
+        wx:for="{{emojis}}"
+        wx:key="*this"
+        data-emoji="{{item}}"
+        bindtap="onTapEmoji"
+      >{{item}}</view>
+    </view>
+
+    <view class="room-plus" wx:if="{{showPlus}}">
+      <view class="room-plus-item" data-kind="image" bindtap="onPickKind">
+        <view class="room-plus-icon-wrap">
+          <image class="room-plus-icon" src="/images/image.svg" mode="aspectFit" />
+        </view>
+        <text>{{t.chat.pickImage}}</text>
+      </view>
+      <view class="room-plus-item" data-kind="video" bindtap="onPickKind">
+        <view class="room-plus-icon-wrap">
+          <image class="room-plus-icon" src="/images/video.svg" mode="aspectFit" />
+        </view>
+        <text>{{t.chat.pickVideo}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 长按操作 -->
+  <view class="room-mask" wx:if="{{showAction}}" catchtouchmove="noop" bindtap="closeAction">
+    <view class="room-action-sheet" catchtap="noop">
+      <view class="room-action-item" bindtap="onActionForward">{{t.chat.forward}}</view>
+      <view class="room-action-item" bindtap="onActionQuote">{{t.chat.quote}}</view>
+      <view class="room-action-item" bindtap="onActionDelete">{{t.chat.delete}}</view>
+      <view
+        class="room-action-item {{canRecall ? '' : 'room-action-item--disabled'}}"
+        bindtap="onActionRecall"
+      >{{t.chat.recall}}</view>
+      <view class="room-action-item room-action-item--cancel" bindtap="closeAction">{{t.common.cancel}}</view>
+    </view>
+  </view>
+
+  <friend-picker
+    show="{{showForward}}"
+    title="{{t.chat.forwardTitle}}"
+    bind:close="closeForward"
+    bind:confirm="onForwardConfirm"
+  />
+</view>

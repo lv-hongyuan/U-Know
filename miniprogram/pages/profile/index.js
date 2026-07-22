@@ -20,7 +20,12 @@ Page({
     loggedIn: false,
     nickName: defaultNickName(),
     avatarUrl: DEFAULT_AVATAR,
+    shortId: "",
     bio: "",
+    schoolLabel: "",
+    schoolLogoUrl: "",
+    showSchool: true,
+    defaultSchoolLogo: "/images/school-badge.svg",
     followerCount: 0,
     followingCount: 0,
     likeCollectCount: 0,
@@ -60,21 +65,36 @@ Page({
       this.getTabBar().setData({ selected: 4 });
     }
     this.syncUser();
-    this.refreshUserFromCloud().finally(() => {
-      if (isLoggedIn()) {
-        this.refreshDrafts();
-        this.loadList({ reset: true });
-      } else {
-        this.setData({
-          list: [],
-          draftList: [],
-          draftCount: 0,
-          publicCount: 0,
-          privateCount: 0,
-          hasMore: false,
-        });
-      }
-    });
+
+    const loggedIn = isLoggedIn();
+    const loginChanged =
+      this._wasLoggedIn !== undefined && this._wasLoggedIn !== loggedIn;
+    this._wasLoggedIn = loggedIn;
+
+    if (!loggedIn) {
+      this._listLoaded = false;
+      this.setData({
+        list: [],
+        draftList: [],
+        draftCount: 0,
+        publicCount: 0,
+        privateCount: 0,
+        hasMore: false,
+      });
+      return;
+    }
+
+    // 草稿本地同步；资料计数后台更新；列表不因切 Tab 反复 reset
+    this.refreshDrafts();
+    this.refreshUserFromCloud();
+
+    const isDraftTab =
+      this.data.mainTab === "posts" && this.data.postFilter === "draft";
+    if (isDraftTab) return;
+
+    if (!this._listLoaded || loginChanged) {
+      this.loadList({ reset: true });
+    }
   },
 
   onPullRefresh() {
@@ -131,11 +151,21 @@ Page({
     const normalized = normalizeUser(user);
     if (normalized) {
       applyUserLocale(normalized);
+      let schoolLabel = "";
+      if (normalized.schoolName) {
+        schoolLabel = normalized.schoolCampus
+          ? `${normalized.schoolName} · ${normalized.schoolCampus}`
+          : normalized.schoolName;
+      }
       this.setData({
         loggedIn: true,
         nickName: displayNickName(normalized),
         avatarUrl: displayAvatar(normalized),
+        shortId: normalized.shortId || "",
         bio: normalized.bio || "",
+        schoolLabel,
+        schoolLogoUrl: normalized.schoolLogoUrl || "",
+        showSchool: normalized.showSchool !== false,
         followerCount: normalized.followerCount || 0,
         followingCount: normalized.followingCount || 0,
         likeCollectCount: normalized.likeCollectCount || 0,
@@ -147,10 +177,25 @@ Page({
       loggedIn: false,
       nickName: defaultNickName(),
       avatarUrl: DEFAULT_AVATAR,
+      shortId: "",
       bio: "",
+      schoolLabel: "",
+      schoolLogoUrl: "",
+      showSchool: true,
       followerCount: 0,
       followingCount: 0,
       likeCollectCount: 0,
+    });
+  },
+
+  onCopyShortId() {
+    const shortId = this.data.shortId;
+    if (!shortId) return;
+    wx.setClipboardData({
+      data: shortId,
+      success: () => {
+        wx.showToast({ title: t("user.idCopied"), icon: "none" });
+      },
     });
   },
 
@@ -199,6 +244,7 @@ Page({
   onSwitchMainTab(e) {
     const tab = e.currentTarget.dataset.tab === "collect" ? "collect" : "posts";
     if (tab === this.data.mainTab) return;
+    // 先切 Tab UI，再骨架屏 + 请求
     this.setData({ mainTab: tab });
     this.refreshEmptyText();
     if (tab === "posts") this.refreshDrafts();
@@ -209,9 +255,11 @@ Page({
     const filter = e.currentTarget.dataset.filter;
     if (!["public", "private", "draft"].includes(filter)) return;
     if (filter === this.data.postFilter) return;
+    // 先切筛选 UI，再骨架屏 + 请求
     this.setData({ postFilter: filter });
     this.refreshEmptyText();
     if (filter === "draft") {
+      this._listReqId = (this._listReqId || 0) + 1;
       this.refreshDrafts();
       this.setData({ list: [], loading: false, hasMore: false });
       return;
@@ -231,10 +279,15 @@ Page({
       this.refreshDrafts();
       return;
     }
-    if (this.data.loading) return;
+    if (!reset && (this.data.loading || !this.data.hasMore)) return;
 
+    const reqId = (this._listReqId = (this._listReqId || 0) + 1);
     const skip = reset ? 0 : this.data.list.length;
-    this.setData({ loading: true });
+    if (reset) {
+      this.setData({ list: [], hasMore: true, loading: true });
+    } else {
+      this.setData({ loading: true });
+    }
 
     try {
       let result;
@@ -248,11 +301,14 @@ Page({
         });
       }
 
+      if (reqId !== this._listReqId) return;
       if (!result.ok) {
         throw new Error(result.error || "list failed");
       }
 
       const cards = await mapFeedCards(result.list || []);
+      if (reqId !== this._listReqId) return;
+
       const patch = {
         list: reset ? cards : this.data.list.concat(cards),
         hasMore: !!result.hasMore,
@@ -267,9 +323,14 @@ Page({
         }
       }
       this.setData(patch);
+      if (reset) this._listLoaded = true;
     } catch (err) {
+      if (reqId !== this._listReqId) return;
       console.error("profile list failed", err);
-      this.setData({ loading: false });
+      this.setData({
+        loading: false,
+        ...(reset ? { list: [], hasMore: false } : {}),
+      });
       wx.showToast({ title: t("common.operationFailed"), icon: "none" });
     }
   },

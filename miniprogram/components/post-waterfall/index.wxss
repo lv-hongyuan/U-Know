@@ -44,7 +44,7 @@
   justify-content: center;
   padding: 24rpx;
   box-sizing: border-box;
-  background: linear-gradient(145deg, #0a2e1a 0%, #14522e 55%, #028527 100%);
+  background: linear-gradient(145deg, #3d1408 0%, #8b2e0a 55%, #FF6B1A 100%);
 }
 
 .wf-views {

@@ -1,0 +1,11 @@
+{
+  "usingComponents": {
+    "list-skeleton": "/components/list-skeleton/index",
+    "friend-picker": "/components/friend-picker/index"
+  },
+  "navigationStyle": "custom",
+  "navigationBarTitleText": " ",
+  "navigationBarBackgroundColor": "#FFF6F0",
+  "backgroundColor": "#FFF6F0",
+  "disableScroll": true
+}

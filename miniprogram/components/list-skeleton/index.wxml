@@ -1,0 +1,65 @@
+<view class="sk sk--{{type}}" aria-hidden="true">
+  <!-- 双列瀑布流帖子 -->
+  <view class="sk-wf" wx:if="{{type === 'waterfall'}}">
+    <view class="sk-wf-col">
+      <view class="sk-wf-card" wx:for="{{waterfallLeft}}" wx:key="key">
+        <view class="sk-bone sk-wf-cover" style="padding-bottom: {{item.ratio * 100}}%;"></view>
+        <view class="sk-wf-body">
+          <view class="sk-bone sk-line sk-line--title"></view>
+          <view class="sk-wf-meta">
+            <view class="sk-bone sk-avatar sk-avatar--sm"></view>
+            <view class="sk-bone sk-line sk-line--name"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="sk-wf-col">
+      <view class="sk-wf-card" wx:for="{{waterfallRight}}" wx:key="key">
+        <view class="sk-bone sk-wf-cover" style="padding-bottom: {{item.ratio * 100}}%;"></view>
+        <view class="sk-wf-body">
+          <view class="sk-bone sk-line sk-line--title"></view>
+          <view class="sk-wf-meta">
+            <view class="sk-bone sk-avatar sk-avatar--sm"></view>
+            <view class="sk-bone sk-line sk-line--name"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 通知类：头像 + 文案 + 右侧封面 -->
+  <block wx:elif="{{type === 'notify'}}">
+    <view class="sk-row sk-row--notify" wx:for="{{rowItems}}" wx:key="key">
+      <view class="sk-bone sk-avatar"></view>
+      <view class="sk-row-main">
+        <view class="sk-bone sk-line sk-line--md"></view>
+        <view class="sk-bone sk-line sk-line--sm"></view>
+        <view class="sk-bone sk-line sk-line--xs"></view>
+      </view>
+      <view class="sk-bone sk-thumb" wx:if="{{item.thumb}}"></view>
+    </view>
+  </block>
+
+  <!-- 关系列表：头像 + 文案 + 按钮 -->
+  <block wx:elif="{{type === 'relation'}}">
+    <view class="sk-row sk-row--relation" wx:for="{{rowItems}}" wx:key="key">
+      <view class="sk-bone sk-avatar"></view>
+      <view class="sk-row-main">
+        <view class="sk-bone sk-line sk-line--md"></view>
+        <view class="sk-bone sk-line sk-line--sm"></view>
+      </view>
+      <view class="sk-bone sk-btn"></view>
+    </view>
+  </block>
+
+  <!-- 学校选择：校徽 + 名称 -->
+  <block wx:elif="{{type === 'school'}}">
+    <view class="sk-row sk-row--school" wx:for="{{rowItems}}" wx:key="key">
+      <view class="sk-bone sk-logo"></view>
+      <view class="sk-row-main">
+        <view class="sk-bone sk-line sk-line--md"></view>
+        <view class="sk-bone sk-line sk-line--xs"></view>
+      </view>
+    </view>
+  </block>
+</view>

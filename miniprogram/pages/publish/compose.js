@@ -1,5 +1,5 @@
 const { getI18nData, t, onLocaleChange } = require("../../i18n/index");
-const { isLoggedIn } = require("../../utils/user");
+const { isLoggedIn, getLocalUser } = require("../../utils/user");
 const {
   TITLE_MAX,
   CONTENT_MAX,
@@ -12,6 +12,7 @@ const {
   isCloudFileId,
 } = require("../../utils/post");
 const { saveDraft, removeDraft, getDraft } = require("../../utils/draft");
+const { formatSchoolLabel } = require("../../utils/school");
 
 Page({
   data: {
@@ -23,6 +24,9 @@ Page({
     topics: [],
     visibility: "public",
     showVisibilitySheet: false,
+    attachSchool: true,
+    hasSchool: false,
+    schoolPreview: "",
     titleMax: TITLE_MAX,
     contentMax: CONTENT_MAX,
     imageMax: IMAGE_MAX,
@@ -109,11 +113,11 @@ Page({
         content: post.content || "",
         topics: post.topics || extractTopics(post.content || ""),
         visibility: post.visibility === "private" ? "private" : "public",
+        attachSchool: !!(post.schoolId || post.schoolName),
         showVisibilitySheet: false,
         isEdit: true,
       });
-    } catch (err) {
-      console.error("load edit post failed", err);
+      this.syncSchoolState({ preserveAttach: true });
       wx.showToast({ title: t("post.notFound"), icon: "none" });
       setTimeout(() => wx.navigateBack({ fail: () => {} }), 400);
     } finally {
@@ -127,6 +131,7 @@ Page({
 
   onShow() {
     this.applyI18n();
+    this.syncSchoolState();
   },
 
   applyI18n() {
@@ -134,6 +139,42 @@ Page({
     wx.setNavigationBarTitle({
       title: this.data.isEdit || this.postId ? t("nav.publishEditPost") : t("nav.publishCompose"),
     });
+  },
+
+  syncSchoolState({ preserveAttach } = {}) {
+    const user = getLocalUser() || {};
+    const hasSchool = !!(user.schoolId && user.schoolName);
+    const schoolPreview = hasSchool
+      ? formatSchoolLabel({
+          name: user.schoolName,
+          campus: user.schoolCampus,
+        })
+      : "";
+    const patch = { hasSchool, schoolPreview };
+    if (!hasSchool) {
+      patch.attachSchool = false;
+    } else if (!preserveAttach) {
+      // keep current if already set in edit load; else default on
+      if (typeof this.data.attachSchool !== "boolean") {
+        patch.attachSchool = true;
+      }
+    }
+    this.setData(patch);
+  },
+
+  onToggleAttachSchool() {
+    if (!this.data.hasSchool) {
+      wx.showToast({ title: t("publish.needSchoolFirst"), icon: "none" });
+    }
+  },
+
+  onAttachSchoolSwitch(e) {
+    if (!this.data.hasSchool) {
+      wx.showToast({ title: t("publish.needSchoolFirst"), icon: "none" });
+      this.setData({ attachSchool: false });
+      return;
+    }
+    this.setData({ attachSchool: !!(e.detail && e.detail.value) });
   },
 
   onTitleInput(e) {
@@ -279,6 +320,7 @@ Page({
         content,
         images,
         visibility: this.data.visibility === "private" ? "private" : "public",
+        attachSchool: !!(this.data.hasSchool && this.data.attachSchool),
       };
 
       const result = isEdit

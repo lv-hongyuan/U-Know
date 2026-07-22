@@ -4,29 +4,36 @@
     "pages/explore/index",
     "pages/publish/index",
     "pages/message/index",
+    "pages/message/comments/index",
+    "pages/message/likes/index",
+    "pages/message/follows/index",
+    "pages/message/system/index",
     "pages/profile/index",
     "pages/profile/edit",
+    "pages/profile/school-picker",
     "pages/settings/index",
     "pages/about/index",
     "pages/contact/index",
     "pages/relations/index",
+    "pages/user/index",
+    "pages/chat/room",
     "pages/publish/edit",
     "pages/publish/compose",
     "pages/post/detail"
   ],
   "window": {
-    "backgroundColor": "#F3F6F2",
+    "backgroundColor": "#FFF6F0",
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#F3F6F2",
+    "navigationBarBackgroundColor": "#FFF6F0",
     "navigationBarTitleText": "U-Know",
     "navigationBarTextStyle": "black"
   },
   "tabBar": {
     "custom": true,
-    "backgroundColor": "#0A2E1A",
+    "backgroundColor": "#3D1408",
     "borderStyle": "black",
     "color": "rgba(255,255,255,0.55)",
-    "selectedColor": "#A3E635",
+    "selectedColor": "#FFB347",
     "list": [
       {
         "pagePath": "pages/home/index",
@@ -34,7 +41,7 @@
       },
       {
         "pagePath": "pages/explore/index",
-        "text": "待定"
+        "text": "商城"
       },
       {
         "pagePath": "pages/publish/index",

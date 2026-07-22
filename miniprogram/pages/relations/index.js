@@ -5,6 +5,7 @@ const {
 } = require("../../i18n/index");
 const { isLoggedIn, DEFAULT_AVATAR } = require("../../utils/user");
 const { listRelations, follow, unfollow } = require("../../utils/follow");
+const { openUserProfile } = require("../../utils/navigate");
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +21,7 @@ Page({
     total: 0,
     hasMore: false,
     loading: false,
+    refreshing: false,
     defaultAvatar: DEFAULT_AVATAR,
   },
 
@@ -137,10 +139,26 @@ Page({
     this.loadList({ reset: false });
   },
 
+  onTapAvatar(e) {
+    const openid = e.currentTarget.dataset.openid;
+    openUserProfile({ openid, source: "default" });
+  },
+
+  async onRefresh() {
+    this.setData({ refreshing: true });
+    await this.loadList({ reset: true });
+  },
+
   async loadList({ reset }) {
-    if (this.data.loading) return;
+    if (!reset && (this.data.loading || !this.data.hasMore)) return;
+
+    const reqId = (this._listReqId = (this._listReqId || 0) + 1);
     const skip = reset ? 0 : this.data.list.length;
-    this.setData({ loading: true });
+    if (reset) {
+      this.setData({ list: [], hasMore: true, loading: true });
+    } else {
+      this.setData({ loading: true });
+    }
 
     try {
       const result = await listRelations({
@@ -150,6 +168,7 @@ Page({
         limit: PAGE_SIZE,
       });
 
+      if (reqId !== this._listReqId) return;
       if (!result.ok) {
         throw new Error(result.error || "list failed");
       }
@@ -165,11 +184,17 @@ Page({
         total: result.total || 0,
         hasMore: !!result.hasMore,
         loading: false,
+        refreshing: false,
       });
       this.refreshListTexts();
     } catch (err) {
+      if (reqId !== this._listReqId) return;
       console.error("load relations failed", err);
-      this.setData({ loading: false });
+      this.setData({
+        loading: false,
+        refreshing: false,
+        ...(reset ? { list: [], hasMore: false } : {}),
+      });
       wx.showToast({ title: t("common.operationFailed"), icon: "none" });
     }
   },

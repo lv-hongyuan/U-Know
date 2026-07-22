@@ -32,6 +32,7 @@ Page({
     t: getI18nData(),
     avatarUrl: DEFAULT_AVATAR,
     nickName: "",
+    shortId: "",
     phoneNumber: "",
     bio: "",
     bioCount: 0,
@@ -44,6 +45,9 @@ Page({
     birthdayEnd: "",
     hometown: "",
     regionValue: [],
+    schoolId: "",
+    schoolLabel: "",
+    showSchool: true,
     locale: getLocale(),
     localeLabel: getLocaleLabel(getLocale()),
     localeOptions: getLocaleOptions(),
@@ -118,9 +122,17 @@ Page({
         ? [user.hometownProvince, user.hometownCity]
         : [];
 
+    let schoolLabel = "";
+    if (user.schoolName) {
+      schoolLabel = user.schoolCampus
+        ? `${user.schoolName} · ${user.schoolCampus}`
+        : user.schoolName;
+    }
+
     this.setData({
       avatarUrl: displayAvatar(user),
       nickName,
+      shortId: user.shortId || "",
       phoneNumber: user.phoneNumber,
       bio: user.bio || "",
       bioCount: (user.bio || "").length,
@@ -130,6 +142,20 @@ Page({
       birthday: user.birthday || "",
       hometown: user.hometown || "",
       regionValue,
+      schoolId: user.schoolId || "",
+      schoolLabel,
+      showSchool: user.showSchool !== false,
+    });
+  },
+
+  onCopyShortId() {
+    const shortId = this.data.shortId;
+    if (!shortId) return;
+    wx.setClipboardData({
+      data: shortId,
+      success: () => {
+        wx.showToast({ title: t("user.idCopied"), icon: "none" });
+      },
     });
   },
 
@@ -628,6 +654,23 @@ Page({
         regionValue: prev.regionValue,
         saving: false,
       });
+      this.handleSaveError(err, t("common.saveFailed"));
+    }
+  },
+
+  onTapSchool() {
+    wx.navigateTo({ url: "/pages/profile/school-picker" });
+  },
+
+  async onShowSchoolChange(e) {
+    const showSchool = !!(e.detail && e.detail.value);
+    const prev = this.data.showSchool;
+    this.setData({ showSchool, saving: true });
+    try {
+      await this.updateProfile({ showSchool });
+      this.setData({ saving: false });
+    } catch (err) {
+      this.setData({ showSchool: prev, saving: false });
       this.handleSaveError(err, t("common.saveFailed"));
     }
   },

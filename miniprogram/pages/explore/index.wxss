@@ -1,6 +1,6 @@
 .explore-page {
   height: 100vh;
-  background: #f3f6f2;
+  background: #fff6f0;
   box-sizing: border-box;
   padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }

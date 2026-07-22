@@ -1,0 +1,155 @@
+.comments-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.comments-scroll {
+  flex: 1;
+  height: 0;
+  box-sizing: border-box;
+}
+
+.comments-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 28rpx 32rpx;
+  box-sizing: border-box;
+  border-bottom: 1rpx solid #edf1ec;
+}
+
+.comments-item--pressed {
+  background: #f7faf6;
+}
+
+.comments-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: #fff6f0;
+  flex-shrink: 0;
+}
+
+.comments-main {
+  flex: 1;
+  min-width: 0;
+  margin: 0 20rpx;
+  padding-top: 4rpx;
+}
+
+.comments-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8rpx;
+  line-height: 1.35;
+}
+
+.comments-name {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #0f1f16;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comments-action {
+  font-size: 24rpx;
+  color: #5c6b60;
+  flex-shrink: 0;
+}
+
+.comments-origin {
+  margin-top: 12rpx;
+  padding: 10rpx 14rpx;
+  border-radius: 10rpx;
+  background: #fff6f0;
+  box-sizing: border-box;
+}
+
+.comments-origin-label {
+  display: block;
+  margin-bottom: 4rpx;
+  font-size: 20rpx;
+  color: #8a968c;
+  line-height: 1.3;
+}
+
+.comments-origin-text {
+  display: -webkit-box;
+  font-size: 24rpx;
+  color: #5c6b60;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+.comments-title {
+  margin-top: 12rpx;
+  font-size: 25rpx;
+  color: #0f1f16;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+.comments-time {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #8a968c;
+  line-height: 1.3;
+}
+
+.comments-cover-wrap {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: #fff6f0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comments-cover {
+  width: 100%;
+  height: 100%;
+}
+
+.comments-empty,
+.comments-loading,
+.comments-end {
+  padding: 48rpx 32rpx 80rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #8a968c;
+}
+
+.comments-empty {
+  padding-top: 160rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.comments-empty-icon {
+  width: 160rpx;
+  height: 160rpx;
+}
+
+.comments-empty-text {
+  font-size: 26rpx;
+  color: #8a968c;
+  line-height: 1.4;
+}

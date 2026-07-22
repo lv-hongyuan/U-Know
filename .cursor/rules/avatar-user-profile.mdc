@@ -1,0 +1,35 @@
+---
+description: Avatar taps open user profile via navigate helper; stack rules for author vs other sources
+globs: miniprogram/**/*.{wxml,js}
+alwaysApply: true
+---
+
+# 头像点击 → 用户主页
+
+凡出现**可点击的用户头像**（帖子作者、评论/回复、通知列表、关系列表等），默认应跳转用户主页。后续新增头像场景也按此规则接入。
+
+## 统一入口
+
+使用 `miniprogram/utils/navigate.js` 的 `openUserProfile`，**不要**在各页手写 `wx.navigateTo('/pages/user/...')`。
+
+```js
+const { openUserProfile } = require("../../utils/navigate");
+
+openUserProfile({ openid, source: "author" | "comment" | "notify" | "default" });
+```
+
+## source 与路由栈
+
+| source | 场景 | 行为 |
+|--------|------|------|
+| `author` | 帖子详情**作者区**头像 | 若页面栈中已有该 `openid` 的用户主页，则 `navigateBack` 回到该页，避免「主页→帖子→主页」循环堆栈 |
+| `comment` | 评论区 / 回复头像 | 始终 `navigateTo`，允许无限前进 |
+| `notify` | 通知列表头像 | 始终 `navigateTo` |
+| `default` | 其他 | 始终 `navigateTo` |
+
+## 实现约定
+
+1. wxml：头像用 `catchtap`（避免与整行 tap 冲突），带 `data-openid`；作者区额外可带 `data-source="author"`。
+2. 无 `openid` 时不跳转。
+3. 用户主页路由：`/pages/user/index?openid=...`；页面实例需设置 `this.openid` 供栈回退匹配。
+4. 自己的头像也可进用户主页（公开态）；「我的」Tab 仍是个人中心，二者可并存。

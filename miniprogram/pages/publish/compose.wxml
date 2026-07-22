@@ -47,6 +47,22 @@
         <text class="compose-field-arrow">›</text>
       </view>
     </view>
+
+    <view class="compose-field" bindtap="onToggleAttachSchool">
+      <text class="compose-field-label">{{t.publish.attachSchool}}</text>
+      <view class="compose-field-right">
+        <text class="compose-field-value {{hasSchool ? '' : 'compose-field-value--muted'}}">
+          {{hasSchool ? (attachSchool ? schoolPreview : t.publish.attachSchoolOff) : t.publish.needSchoolFirst}}
+        </text>
+        <switch
+          class="compose-school-switch"
+          checked="{{attachSchool}}"
+          disabled="{{!hasSchool}}"
+          color="#FF6B1A"
+          catchchange="onAttachSchoolSwitch"
+        />
+      </view>
+    </view>
   </view>
 
   <view class="compose-footer">

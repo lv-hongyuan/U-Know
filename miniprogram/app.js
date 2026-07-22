@@ -15,7 +15,7 @@ App({
       // env 参数决定接下来小程序发起的云开发调用（wx.cloud.xxx）会请求到哪个云环境的资源
       // 此处请填入环境 ID, 环境 ID 可在微信开发者工具右上顶部工具栏点击云开发按钮打开获取
       env: "cloudbase-2gta2u0scd51b686",
-      themeColor: "#028527",
+      themeColor: "#FF6B1A",
       userInfo: null,
       locale: getLocale(),
     };

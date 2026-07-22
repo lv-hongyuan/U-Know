@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "list-skeleton": "/components/list-skeleton/index"
+  },
+  "navigationBarTitleText": "关注",
+  "navigationBarBackgroundColor": "#ffffff",
+  "backgroundColor": "#ffffff"
+}

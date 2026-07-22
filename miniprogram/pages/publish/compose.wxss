@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f3f6f2;
+  background: #fff6f0;
   box-sizing: border-box;
   padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
@@ -124,7 +124,7 @@
   padding: 10rpx 20rpx;
   border-radius: 24rpx;
   background: #e8f5e9;
-  color: #028527;
+  color: #FF6B1A;
   font-size: 24rpx;
   font-weight: 600;
 }
@@ -140,7 +140,7 @@
   padding: 8rpx 16rpx;
   border-radius: 20rpx;
   background: #ffffff;
-  color: #028527;
+  color: #FF6B1A;
   font-size: 24rpx;
 }
 
@@ -172,6 +172,21 @@
 .compose-field-value {
   font-size: 28rpx;
   color: #5c6b60;
+  max-width: 360rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compose-field-value--muted {
+  color: #a3aea6;
+  font-size: 24rpx;
+}
+
+.compose-school-switch {
+  transform: scale(0.82);
+  transform-origin: right center;
+  margin-left: 8rpx;
 }
 
 .compose-field-arrow {
@@ -245,7 +260,7 @@
 }
 
 .vis-sheet-item--active {
-  color: #028527;
+  color: #FF6B1A;
 }
 
 .vis-sheet-item--last {
@@ -267,7 +282,7 @@
 }
 
 .vis-sheet-item--active .vis-sheet-item-label {
-  color: #028527;
+  color: #FF6B1A;
 }
 
 .vis-sheet-item-desc {
@@ -279,8 +294,8 @@
   flex-shrink: 0;
   width: 28rpx;
   height: 14rpx;
-  border-left: 4rpx solid #028527;
-  border-bottom: 4rpx solid #028527;
+  border-left: 4rpx solid #FF6B1A;
+  border-bottom: 4rpx solid #FF6B1A;
   transform: rotate(-45deg);
   margin-bottom: 8rpx;
 }
@@ -304,13 +319,13 @@
   line-height: 88rpx;
   text-align: center;
   border-radius: 44rpx;
-  background: #028527;
+  background: #FF6B1A;
   color: #ffffff;
   font-size: 30rpx;
   font-weight: 700;
 }
 
 .compose-btn--ghost {
-  background: #f3f6f2;
+  background: #fff6f0;
   color: #5c6b60;
 }

@@ -1,5 +1,7 @@
 <view class="wf">
-  <view class="wf-cols" wx:if="{{left.length || right.length}}">
+  <list-skeleton wx:if="{{loading && !left.length && !right.length}}" type="waterfall" />
+
+  <view class="wf-cols" wx:elif="{{left.length || right.length}}">
     <view class="wf-col">
       <view class="wf-card" wx:for="{{left}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapItem">
         <view class="wf-cover-wrap" style="padding-bottom: {{item.coverRatio * 100}}%;">
@@ -60,7 +62,7 @@
     </view>
   </view>
 
-  <view class="wf-empty" wx:if="{{!loading && !left.length && !right.length}}">{{emptyText}}</view>
-  <view class="wf-status" wx:if="{{loading}}">{{loadingText}}</view>
-  <view class="wf-status" wx:elif="{{!hasMore && (left.length || right.length)}}">{{noMoreText}}</view>
+  <view class="wf-empty" wx:elif="{{!loading}}">{{emptyText}}</view>
+  <view class="wf-status" wx:if="{{loading && (left.length || right.length)}}">{{loadingText}}</view>
+  <view class="wf-status" wx:elif="{{!loading && !hasMore && (left.length || right.length)}}">{{noMoreText}}</view>
 </view>

@@ -1,0 +1,93 @@
+<view class="page user-page" wx:if="{{user}}">
+  <scroll-view
+    class="user-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
+    bindscrolltolower="onLoadMore"
+    lower-threshold="120"
+  >
+    <view class="user-top">
+      <view class="user-header">
+        <view
+          class="user-school"
+          wx:if="{{user.showSchool !== false && user.schoolName}}"
+        >
+          <image
+            class="user-school-icon"
+            src="{{user.schoolLogoUrl || defaultSchoolLogo}}"
+            mode="aspectFit"
+          />
+          <text class="user-school-text">{{user.schoolName}}{{user.schoolCampus ? ' · ' + user.schoolCampus : ''}}</text>
+        </view>
+        <image
+          class="user-avatar"
+          src="{{user.avatarUrl || defaultAvatar}}"
+          mode="aspectFill"
+        />
+        <view class="user-meta">
+          <view class="user-name-row">
+            <view class="user-name">{{user.nickName}}</view>
+            <view
+              wx:if="{{!isSelf}}"
+              class="user-follow {{following ? 'user-follow--on' : ''}} {{followActing ? 'user-follow--busy' : ''}}"
+              catchtap="onToggleFollow"
+            >{{following ? t.post.followed : t.post.follow}}</view>
+          </view>
+          <view
+            class="user-id"
+            wx:if="{{user.shortId}}"
+            catchtap="onCopyShortId"
+          >{{t.user.accountId}} {{user.shortId}}</view>
+          <view class="user-region" wx:if="{{user.regionText}}">{{user.regionText}}</view>
+          <view class="user-bio" wx:if="{{user.bio}}">{{user.bio}}</view>
+          <view class="user-bio user-bio--muted" wx:else>{{t.profile.noBio}}</view>
+        </view>
+      </view>
+
+      <view class="user-stats-bar {{!isSelf ? 'user-stats-bar--with-actions' : ''}}">
+        <view class="user-stats">
+          <view class="user-stat" bindtap="onTapFollowing">
+            <text class="user-stat-num">{{user.followingCount || 0}}</text>
+            <text class="user-stat-label">{{t.profile.following}}</text>
+          </view>
+          <view class="user-stat" bindtap="onTapFollowers">
+            <text class="user-stat-num">{{user.followerCount || 0}}</text>
+            <text class="user-stat-label">{{t.profile.followers}}</text>
+          </view>
+          <view class="user-stat">
+            <text class="user-stat-num">{{user.likeCollectCount || 0}}</text>
+            <text class="user-stat-label">{{t.profile.likeCollect}}</text>
+          </view>
+        </view>
+        <view
+          class="user-message"
+          wx:if="{{!isSelf}}"
+          bindtap="onTapMessage"
+        >
+          <image class="user-message-icon" src="/images/chat.svg" mode="aspectFit" />
+          <text class="user-message-text">{{t.user.dm}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="user-section-title">{{t.profile.tabPosts}}</view>
+
+    <post-waterfall
+      list="{{list}}"
+      loading="{{listLoading}}"
+      hasMore="{{hasMore}}"
+      emptyText="{{t.user.emptyPosts}}"
+      loadingText="{{t.common.loading}}"
+      noMoreText="{{t.feed.noMore}}"
+      bind:itemtap="onTapPost"
+    />
+  </scroll-view>
+</view>
+
+<view class="page user-page user-page--loading" wx:elif="{{loading}}">
+  <text class="user-loading">{{t.common.loading}}</text>
+</view>

@@ -12,9 +12,12 @@ alwaysApply: true
 
 | 模块 | 云函数 | 数据表 | 职责 |
 |------|--------|--------|------|
-| 登录鉴权 | `login` | `users`（读写资料） | 手机号登录、换绑、改资料、`getProfile` |
-| 用户关系 | `user` | `follows` + 更新 `users` 计数 | 关注/取关/互关列表/`isFollowing` |
-| 社区发帖 | `post` | `posts` | 发布图文、首页/广场信息流；`visibility: public|private` |
+| 登录鉴权 | `login` | `users`（读写资料） | 手机号登录、换绑、改资料、`getProfile`；`shortId`（8 位账号）生成/回填 |
+| 用户关系 | `user` | `follows` + 更新 `users` 计数 | 关注/取关/互关列表/`isFollowing`/`getPublicProfile` |
+| 社区发帖 | `post` | `posts` | 发布图文、首页/广场信息流、`listUserPublic`；`visibility: public|private`；可选携带学校标签快照 |
+| 互动通知 | `notify` | `notifications` | 评论/赞/收藏/关注通知；分类未读角标 |
+| 私聊 | `chat` | `conversations` + `messages` | 一对一私信、撤回/转发、会话未读；本地近 7 天缓存 |
+| 高校目录 | `school` | `schools` | 广东省高校+校区目录；`listOpen`/`CRUD`/`setOpen` |
 
 ## 新增能力时
 

@@ -4,13 +4,31 @@
     scroll-y
     enhanced
     show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation
     bindscrolltolower="onLoadMoreComments"
     lower-threshold="80"
   >
     <view class="detail-author">
-      <image class="detail-avatar" src="{{post.avatarUrl || defaultAvatar}}" mode="aspectFill" />
-      <text class="detail-nick">{{post.nickName}}</text>
-      <view class="detail-menu" wx:if="{{isOwner}}" bindtap="onTapMenu">
+      <image
+        class="detail-avatar"
+        src="{{post.avatarUrl || defaultAvatar}}"
+        mode="aspectFill"
+        data-openid="{{post.openid}}"
+        catchtap="onTapAuthorAvatar"
+      />
+      <text
+        class="detail-nick"
+        data-openid="{{post.openid}}"
+        catchtap="onTapAuthorAvatar"
+      >{{post.nickName}}</text>
+      <view class="detail-school-tag" wx:if="{{authorShowSchool && authorSchoolShortName}}">{{authorSchoolShortName}}</view>
+      <view
+        wx:if="{{!isOwner}}"
+        class="detail-follow {{following ? 'detail-follow--on' : ''}} {{followActing ? 'detail-follow--busy' : ''}}"
+        catchtap="onToggleFollow"
+      >{{following ? t.post.followed : t.post.follow}}</view>
+      <view class="detail-menu" wx:if="{{isOwner}}" catchtap="onTapMenu">
         <image class="detail-menu-icon" src="/images/more.svg" mode="aspectFit" />
       </view>
     </view>
@@ -21,7 +39,7 @@
       style="height: {{swiperHeight}}px;"
       indicator-dots="{{post.images.length > 1}}"
       indicator-color="rgba(15,31,22,0.2)"
-      indicator-active-color="#028527"
+      indicator-active-color="#FF6B1A"
       bindchange="onSwiperChange"
     >
       <swiper-item wx:for="{{post.images}}" wx:key="*this">
@@ -42,25 +60,145 @@
     <view class="detail-body">
       <view class="detail-title">{{post.title}}</view>
       <view class="detail-content">{{post.content}}</view>
-      <view class="detail-topics" wx:if="{{post.topics.length}}">
+      <view class="detail-topics" wx:if="{{post.topics.length || post.schoolLabel}}">
         <text class="detail-topic" wx:for="{{post.topics}}" wx:key="*this">#{{item}}</text>
-      </view>
-      <view class="detail-views">
-        <image class="detail-views-icon" src="/images/eye.svg" mode="aspectFit" />
-        <text>{{post.viewCount || 0}} {{t.post.views}}</text>
+        <text class="detail-topic detail-topic--school" wx:if="{{post.schoolLabel}}">{{post.schoolLabel}}</text>
       </view>
     </view>
 
-    <view class="detail-comments-head">
+    <view id="comments-section" class="detail-comments-head">
       <text class="detail-comments-title">{{t.post.comments}}</text>
       <text class="detail-comments-count">{{post.commentCount || 0}}</text>
     </view>
 
-    <view class="detail-comment" wx:for="{{comments}}" wx:key="_id">
-      <image class="detail-comment-avatar" src="{{item.avatarUrl || defaultAvatar}}" mode="aspectFill" />
-      <view class="detail-comment-main">
-        <text class="detail-comment-nick">{{item.nickName}}</text>
-        <text class="detail-comment-text">{{item.content}}</text>
+    <view
+      class="detail-comment-card {{focusAnchorId === item._id ? 'detail-comment-card--focus' : ''}}"
+      id="c-{{item._id}}"
+      wx:for="{{comments}}"
+      wx:key="_id"
+    >
+      <view class="detail-comment">
+        <image
+          class="detail-comment-avatar"
+          src="{{item.avatarUrl || defaultAvatar}}"
+          mode="aspectFill"
+          data-openid="{{item.openid}}"
+          catchtap="onTapCommentAvatar"
+        />
+        <view class="detail-comment-main">
+          <text class="detail-comment-nick">{{item.nickName}}</text>
+          <text class="detail-comment-text" wx:if="{{item.content}}">{{item.content}}</text>
+          <image
+            wx:if="{{item.image}}"
+            class="detail-comment-image"
+            src="{{item.image}}"
+            mode="widthFix"
+            bindtap="onPreviewCommentImage"
+            data-url="{{item.image}}"
+          />
+          <view class="detail-comment-meta">
+            <view class="detail-comment-meta-left">
+              <text class="detail-comment-time">{{item.timeLabel}}</text>
+              <text
+                class="detail-comment-action"
+                catchtap="onTapReply"
+                data-id="{{item._id}}"
+                data-nick="{{item.nickName}}"
+                data-openid="{{item.openid}}"
+              >{{t.post.reply}}</text>
+            </view>
+            <view
+              class="detail-comment-like"
+              catchtap="onToggleCommentLike"
+              data-id="{{item._id}}"
+            >
+              <image
+                class="detail-comment-like-icon"
+                src="{{item.liked ? '/images/heart.svg' : '/images/heart-outline.svg'}}"
+                mode="aspectFit"
+              />
+              <text class="detail-comment-like-num">{{item.likeCount || 0}}</text>
+            </view>
+          </view>
+
+          <view class="detail-replies" wx:if="{{item.replyTotal > 0}}">
+            <view
+              class="detail-reply {{focusAnchorId === reply._id ? 'detail-reply--focus' : ''}}"
+              id="c-{{reply._id}}"
+              wx:for="{{item.replies}}"
+              wx:for-item="reply"
+              wx:key="_id"
+            >
+              <image
+                class="detail-reply-avatar"
+                src="{{reply.avatarUrl || defaultAvatar}}"
+                mode="aspectFill"
+                data-openid="{{reply.openid}}"
+                catchtap="onTapCommentAvatar"
+              />
+              <view class="detail-reply-main">
+                <view class="detail-reply-head">
+                  <text class="detail-reply-nick">{{reply.nickName}}</text>
+                  <text class="detail-reply-label">{{t.post.repliedTo}}</text>
+                  <text class="detail-reply-nick">{{reply.replyToNickName}}</text>
+                </view>
+                <text class="detail-reply-text" wx:if="{{reply.content}}">{{reply.content}}</text>
+                <image
+                  wx:if="{{reply.image}}"
+                  class="detail-reply-image"
+                  src="{{reply.image}}"
+                  mode="widthFix"
+                  bindtap="onPreviewCommentImage"
+                  data-url="{{reply.image}}"
+                />
+                <view class="detail-comment-meta detail-comment-meta--reply">
+                  <view class="detail-comment-meta-left">
+                    <text class="detail-comment-time">{{reply.timeLabel}}</text>
+                    <text
+                      class="detail-reply-action"
+                      catchtap="onTapReply"
+                      data-id="{{reply._id}}"
+                      data-nick="{{reply.nickName}}"
+                      data-openid="{{reply.openid}}"
+                      data-parent-id="{{item._id}}"
+                      data-is-reply="1"
+                    >{{t.post.reply}}</text>
+                  </view>
+                  <view
+                    class="detail-comment-like detail-comment-like--reply"
+                    catchtap="onToggleCommentLike"
+                    data-id="{{reply._id}}"
+                  >
+                    <image
+                      class="detail-comment-like-icon"
+                      src="{{reply.liked ? '/images/heart.svg' : '/images/heart-outline.svg'}}"
+                      mode="aspectFit"
+                    />
+                    <text class="detail-comment-like-num">{{reply.likeCount || 0}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            <view class="detail-replies-actions" wx:if="{{item.replyTotal > replyPreview}}">
+              <view
+                class="detail-replies-toggle"
+                wx:if="{{(item.replyTotal > replyPreview && expandedCommentId !== item._id) || (expandedCommentId === item._id && item.replies.length < item.replyTotal)}}"
+                catchtap="onExpandReplies"
+                data-id="{{item._id}}"
+              >
+                <image class="detail-replies-toggle-icon" src="/images/chevrons-left.svg" mode="aspectFit" />
+                <text>{{t.post.expandReplies}}</text>
+                <image class="detail-replies-toggle-icon" src="/images/chevrons-right.svg" mode="aspectFit" />
+              </view>
+              <text
+                class="detail-replies-toggle"
+                wx:if="{{expandedCommentId === item._id}}"
+                catchtap="onCollapseReplies"
+                data-id="{{item._id}}"
+              >{{t.post.collapseReplies}}</text>
+            </view>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -81,27 +219,81 @@
     </view>
     <view class="detail-action" bindtap="onToggleCollect">
       <image
-        class="detail-action-icon"
+        class="detail-action-icon detail-action-icon--star"
         src="{{collected ? '/images/collect-filled.svg' : '/images/collect.svg'}}"
         mode="aspectFit"
       />
       <text class="detail-action-num">{{post.collectCount || 0}}</text>
     </view>
-    <view class="detail-input-wrap">
-      <input
-        class="detail-input"
+    <view class="detail-action" bindtap="onTapComments">
+      <image class="detail-action-icon" src="/images/comment.svg" mode="aspectFit" />
+      <text class="detail-action-num">{{post.commentCount || 0}}</text>
+    </view>
+    <view class="detail-input-wrap" bindtap="onOpenComposer">
+      <image class="detail-input-edit" src="/images/edit.svg" mode="aspectFit" />
+      <text class="detail-input-fake {{commentDraft || commentImage ? 'detail-input-fake--filled' : ''}}">{{commentDraft || commentPlaceholder}}</text>
+    </view>
+  </view>
+
+  <view
+    class="composer-mask"
+    wx:if="{{showComposer}}"
+    catchtouchmove="noop"
+    bindtap="onCloseComposer"
+  >
+    <view
+      class="composer-sheet"
+      style="padding-bottom: {{keyboardHeight}}px;"
+      catchtap="noop"
+    >
+      <textarea
+        class="composer-textarea"
         maxlength="{{commentMax}}"
-        placeholder="{{t.post.commentPlaceholder}}"
+        placeholder="{{commentPlaceholder}}"
         value="{{commentDraft}}"
-        confirm-type="send"
-        bindinput="onCommentInput"
-        bindconfirm="onSendComment"
-        focus="{{commentFocus}}"
-        bindfocus="onCommentFocus"
-        bindblur="onCommentBlur"
+        focus="{{composerFocus}}"
+        show-confirm-bar="{{false}}"
+        adjust-position="{{false}}"
+        hold-keyboard="{{true}}"
+        bindinput="onComposerInput"
+        bindfocus="onComposerFocus"
+        bindblur="onComposerBlur"
       />
-      <view class="detail-send {{canSend ? 'detail-send--on' : ''}}" bindtap="onSendComment">
-        <image class="detail-send-icon" src="/images/send.svg" mode="aspectFit" />
+      <view class="composer-image-wrap" wx:if="{{commentImage}}">
+        <image class="composer-image" src="{{commentImage}}" mode="aspectFill" />
+        <view class="composer-image-del" catchtap="onRemoveCommentImage">×</view>
+      </view>
+      <scroll-view
+        class="composer-emoji-panel"
+        wx:if="{{showEmojiPanel}}"
+        scroll-x
+        enhanced
+        show-scrollbar="{{false}}"
+      >
+        <text
+          class="composer-emoji"
+          wx:for="{{commentEmojis}}"
+          wx:key="*this"
+          catchtap="onPickEmoji"
+          data-emoji="{{item}}"
+        >{{item}}</text>
+      </scroll-view>
+      <view class="composer-toolbar">
+        <view class="composer-tools">
+          <view class="composer-tool" catchtap="onChooseCommentImage">
+            <image class="composer-tool-icon" src="/images/image.svg" mode="aspectFit" />
+          </view>
+          <view class="composer-tool" catchtap="onInsertAt">
+            <image class="composer-tool-icon" src="/images/at.svg" mode="aspectFit" />
+          </view>
+          <view class="composer-tool" catchtap="onToggleEmojiPanel">
+            <text class="composer-tool-emoji">😊</text>
+          </view>
+        </view>
+        <view
+          class="composer-send {{canSend ? 'composer-send--on' : ''}}"
+          catchtap="onSendComment"
+        >{{t.post.sendComment}}</view>
       </view>
     </view>
   </view>

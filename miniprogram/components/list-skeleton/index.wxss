@@ -1,0 +1,162 @@
+.sk {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sk-bone {
+  background: linear-gradient(
+    90deg,
+    #f0e4da 0%,
+    #faf2ec 42%,
+    #f0e4da 84%
+  );
+  background-size: 220% 100%;
+  animation: sk-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes sk-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* —— waterfall —— */
+.sk-wf {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  padding: 0 8rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.sk-wf-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.sk-wf-card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.sk-wf-cover {
+  position: relative;
+  width: 100%;
+  height: 0;
+  display: block;
+}
+
+.sk-wf-body {
+  padding: 16rpx 12rpx 18rpx;
+}
+
+.sk-wf-meta {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 14rpx;
+}
+
+/* —— shared bones —— */
+.sk-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  flex-shrink: 0;
+}
+
+.sk-avatar--sm {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 18rpx;
+}
+
+.sk-logo {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 14rpx;
+  flex-shrink: 0;
+}
+
+.sk-thumb {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 12rpx;
+  flex-shrink: 0;
+}
+
+.sk-btn {
+  width: 128rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  flex-shrink: 0;
+}
+
+.sk-line {
+  height: 24rpx;
+  border-radius: 8rpx;
+}
+
+.sk-line--title {
+  width: 78%;
+  height: 28rpx;
+}
+
+.sk-line--name {
+  flex: 1;
+  height: 22rpx;
+  max-width: 120rpx;
+}
+
+.sk-line--md {
+  width: 58%;
+  margin-bottom: 14rpx;
+}
+
+.sk-line--sm {
+  width: 86%;
+  margin-bottom: 12rpx;
+}
+
+.sk-line--xs {
+  width: 36%;
+  height: 20rpx;
+}
+
+/* —— notify / relation / school rows —— */
+.sk-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx 28rpx;
+  box-sizing: border-box;
+}
+
+.sk-row--notify + .sk-row--notify,
+.sk-row--relation + .sk-row--relation,
+.sk-row--school + .sk-row--school {
+  border-top: 1rpx solid rgba(61, 20, 8, 0.05);
+}
+
+.sk-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sk--notify,
+.sk--relation,
+.sk--school {
+  background: #ffffff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  margin: 0 24rpx;
+}

@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "list-skeleton": "/components/list-skeleton/index"
+  },
+  "navigationBarTitleText": "赞和收藏",
+  "navigationBarBackgroundColor": "#ffffff",
+  "backgroundColor": "#ffffff"
+}

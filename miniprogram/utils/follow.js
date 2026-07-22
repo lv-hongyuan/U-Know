@@ -34,9 +34,17 @@ function listRelations({ tab = "following", keyword = "", skip = 0, limit = 20 }
   });
 }
 
+function getPublicProfile(targetOpenid) {
+  return callUser({
+    type: "getPublicProfile",
+    targetOpenid,
+  });
+}
+
 module.exports = {
   follow,
   unfollow,
   isFollowing,
   listRelations,
+  getPublicProfile,
 };

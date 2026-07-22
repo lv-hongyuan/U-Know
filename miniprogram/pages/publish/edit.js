@@ -4,17 +4,12 @@ Page({
   data: {
     t: getI18nData(),
     imagePath: "",
-    cropped: false,
   },
 
   onLoad(options) {
     const src = options && options.src ? decodeURIComponent(options.src) : "";
-    this.setData({ imagePath: src, cropped: false });
+    this.setData({ imagePath: src });
     this._offLocale = onLocaleChange(() => this.applyI18n());
-    // 默认选用裁剪：进入页后自动调起一次
-    if (src) {
-      setTimeout(() => this.openCrop(true), 80);
-    }
   },
 
   onUnload() {
@@ -31,10 +26,10 @@ Page({
   },
 
   onTapCrop() {
-    this.openCrop(false);
+    this.openCrop();
   },
 
-  openCrop(silentCancel) {
+  openCrop() {
     const src = this.data.imagePath;
     if (!src) return;
 
@@ -56,14 +51,11 @@ Page({
           wx.showToast({ title: t("edit.cropFailed"), icon: "none" });
           return;
         }
-        this.setData({ imagePath: path, cropped: true });
+        this.setData({ imagePath: path });
       },
       fail: (err) => {
         const msg = (err && err.errMsg) || "";
-        if (msg.indexOf("cancel") > -1) {
-          if (!silentCancel) return;
-          return;
-        }
+        if (msg.indexOf("cancel") > -1) return;
         wx.showToast({ title: t("edit.cropFailed"), icon: "none" });
       },
     });
@@ -76,43 +68,13 @@ Page({
       return;
     }
 
-    const goCompose = () => {
-      const app = getApp();
-      if (app && app.globalData) {
-        app.globalData.publishSession = {
-          mode: "image",
-          images: [path],
-        };
-      }
-      wx.redirectTo({ url: "/pages/publish/compose?mode=image" });
-    };
-
-    // 未裁剪过则先裁剪再进入
-    if (!this.data.cropped && typeof wx.cropImage === "function") {
-      wx.cropImage({
-        src: path,
-        cropScale: "1:1",
-        success: (res) => {
-          const next = (res && res.tempFilePath) || path;
-          this.setData({ imagePath: next, cropped: true });
-          const app = getApp();
-          if (app && app.globalData) {
-            app.globalData.publishSession = {
-              mode: "image",
-              images: [next],
-            };
-          }
-          wx.redirectTo({ url: "/pages/publish/compose?mode=image" });
-        },
-        fail: (err) => {
-          const msg = (err && err.errMsg) || "";
-          if (msg.indexOf("cancel") > -1) return;
-          goCompose();
-        },
-      });
-      return;
+    const app = getApp();
+    if (app && app.globalData) {
+      app.globalData.publishSession = {
+        mode: "image",
+        images: [path],
+      };
     }
-
-    goCompose();
+    wx.redirectTo({ url: "/pages/publish/compose?mode=image" });
   },
 });

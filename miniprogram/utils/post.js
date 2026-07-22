@@ -6,6 +6,8 @@ const CONTENT_MAX = 1200;
 const TOPIC_MAX_LEN = 10;
 const IMAGE_MAX = 9;
 const COMMENT_MAX = 300;
+const REPLY_PREVIEW = 3;
+const REPLY_EXPAND = 5;
 const DEFAULT_AVATAR = "/images/default-avatar.svg";
 const COVER_RATIO_MAX = 1.5;
 const COVER_RATIO_DEFAULT = 1.25;
@@ -44,6 +46,7 @@ function createPost(payload) {
     content: payload && payload.content,
     images: payload && payload.images,
     visibility: payload && payload.visibility,
+    attachSchool: payload && payload.attachSchool !== false,
   });
 }
 
@@ -56,6 +59,7 @@ function updatePost(payload) {
     content: payload && payload.content,
     images: payload && payload.images,
     visibility: payload && payload.visibility,
+    attachSchool: payload && payload.attachSchool !== false,
   });
 }
 
@@ -82,6 +86,16 @@ function listMine({ visibility = "public", skip = 0, limit = 10 } = {}) {
     action: "listMine",
     type: "listMine",
     visibility,
+    skip,
+    limit,
+  });
+}
+
+function listUserPublic({ targetOpenid, skip = 0, limit = 10 } = {}) {
+  return callPost({
+    action: "listUserPublic",
+    type: "listUserPublic",
+    targetOpenid,
     skip,
     limit,
   });
@@ -122,12 +136,56 @@ function listComments({ postId, skip = 0, limit = 20 } = {}) {
   });
 }
 
-function createComment({ postId, content }) {
-  return callPost({
+function listReplies({
+  postId,
+  parentId,
+  skip = 0,
+  limit = REPLY_EXPAND,
+  untilId = "",
+} = {}) {
+  const payload = {
+    action: "listReplies",
+    type: "listReplies",
+    postId,
+    parentId,
+    skip,
+    limit,
+  };
+  if (untilId) payload.untilId = untilId;
+  return callPost(payload);
+}
+
+function createComment({
+  postId,
+  content,
+  image,
+  parentId,
+  replyToOpenid,
+  replyToNickName,
+  replyToCommentId,
+}) {
+  const payload = {
     action: "createComment",
     type: "createComment",
     postId,
-    content,
+    content: content || "",
+  };
+  if (image) payload.image = image;
+  if (parentId) {
+    payload.parentId = parentId;
+    payload.replyToOpenid = replyToOpenid || "";
+    payload.replyToNickName = replyToNickName || "";
+    if (replyToCommentId) payload.replyToCommentId = replyToCommentId;
+  }
+  return callPost(payload);
+}
+
+function toggleCommentLike({ postId, commentId }) {
+  return callPost({
+    action: "toggleCommentLike",
+    type: "toggleCommentLike",
+    postId,
+    commentId,
   });
 }
 
@@ -209,6 +267,8 @@ module.exports = {
   TOPIC_MAX_LEN,
   IMAGE_MAX,
   COMMENT_MAX,
+  REPLY_PREVIEW,
+  REPLY_EXPAND,
   COVER_RATIO_MAX,
   DEFAULT_AVATAR,
   extractTopics,
@@ -217,11 +277,14 @@ module.exports = {
   getPostDetail,
   listFeed,
   listMine,
+  listUserPublic,
   listCollected,
   toggleLike,
   toggleCollect,
   listComments,
+  listReplies,
   createComment,
+  toggleCommentLike,
   toFeedCard,
   mapFeedCards,
   splitWaterfall,

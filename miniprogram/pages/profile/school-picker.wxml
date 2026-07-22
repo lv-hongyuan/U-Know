@@ -1,0 +1,70 @@
+<view class="page picker-page">
+  <view class="picker-search">
+    <input
+      class="picker-input"
+      placeholder="{{t.edit.schoolSearchPlaceholder}}"
+      value="{{keyword}}"
+      confirm-type="search"
+      bindinput="onKeywordInput"
+      bindconfirm="onSearch"
+    />
+    <view class="picker-search-btn" bindtap="onSearch">{{t.common.search}}</view>
+  </view>
+
+  <view class="picker-step" wx:if="{{step === 'campus'}}">
+    <view class="picker-back" bindtap="onBackToSchools">‹ {{t.edit.selectSchool}}</view>
+    <view class="picker-school-title">{{selectedName}}</view>
+    <scroll-view class="picker-list" scroll-y>
+      <view
+        class="picker-item"
+        wx:for="{{campusList}}"
+        wx:key="_id"
+        data-id="{{item._id}}"
+        bindtap="onPickCampus"
+      >
+        <image
+          class="picker-logo"
+          src="{{item.logoUrl || defaultLogo}}"
+          mode="aspectFit"
+        />
+        <view class="picker-item-main">
+          <text class="picker-item-name">{{item.campus || t.edit.mainCampus}}</text>
+          <text class="picker-item-sub">{{item.shortName}}</text>
+        </view>
+        <view class="picker-arrow">›</view>
+      </view>
+      <view class="picker-empty" wx:if="{{!loading && !campusList.length}}">
+        <image class="picker-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+        <text class="picker-empty-text">{{t.common.noData}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="picker-list" scroll-y wx:else>
+    <list-skeleton wx:if="{{loading && !schoolGroups.length}}" type="school" rows="{{10}}" />
+    <view
+      class="picker-item"
+      wx:for="{{schoolGroups}}"
+      wx:key="name"
+      data-name="{{item.name}}"
+      bindtap="onPickSchool"
+    >
+      <image
+        class="picker-logo"
+        src="{{item.logoUrl || defaultLogo}}"
+        mode="aspectFit"
+      />
+      <view class="picker-item-main">
+        <text class="picker-item-name">{{item.name}}</text>
+        <text class="picker-item-sub">{{item.shortName}}{{item.campuses.length > 1 ? ' · ' + item.campuses.length + t.edit.campusCount : (item.campuses[0].campus ? ' · ' + item.campuses[0].campus : '')}}</text>
+      </view>
+      <view class="picker-arrow">›</view>
+    </view>
+    <view class="picker-empty" wx:if="{{!loading && !schoolGroups.length}}">
+      <image class="picker-empty-icon" src="/images/empty.svg" mode="aspectFit" />
+      <text class="picker-empty-text">{{t.common.noData}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="picker-clear" bindtap="onClearSchool" wx:if="{{step === 'school'}}">{{t.edit.clearSchool}}</view>
+</view>
