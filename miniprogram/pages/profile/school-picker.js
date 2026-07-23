@@ -9,7 +9,7 @@ Page({
   data: {
     t: getI18nData(),
     keyword: "",
-    loading: false,
+    loading: true,
     step: "school",
     schoolGroups: [],
     selectedName: "",

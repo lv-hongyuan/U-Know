@@ -45,23 +45,26 @@ Page({
     showPlus: false,
     quote: null,
     scrollIntoView: "",
+    scrollWithAnimation: true,
     actionMsg: null,
     showAction: false,
     canRecall: false,
     showForward: false,
+    forwardSending: false,
+    actionPos: { top: 0, left: 0 },
+    actionArrowLeft: 130,
     emojis: EMOJIS,
     defaultAvatar: DEFAULT_AVATAR,
     statusBarHeight: 20,
     navBarHeight: 44,
-    safeBottom: 0,
     keyboardHeight: 0,
-    pageHeight: 667,
     topSpace: 0,
     inputFocused: false,
   },
 
   onLoad(query) {
     this.initLayoutMetrics();
+    this.bindKeyboard();
     this._offLocale = onLocaleChange(() => this.applyI18n());
     if (!isLoggedIn()) {
       wx.showToast({ title: t("profile.tapToLogin"), icon: "none" });
@@ -88,12 +91,6 @@ Page({
           ? wx.getWindowInfo()
           : wx.getSystemInfoSync();
       const statusBarHeight = windowInfo.statusBarHeight || 20;
-      const windowHeight = windowInfo.windowHeight || 667;
-      const safeBottom =
-        (windowInfo.safeArea &&
-          windowInfo.screenHeight &&
-          Math.max(0, windowInfo.screenHeight - windowInfo.safeArea.bottom)) ||
-        0;
       let navBarHeight = 44;
       try {
         const menu = wx.getMenuButtonBoundingClientRect();
@@ -104,31 +101,35 @@ Page({
       } catch (e) {
         // keep 44
       }
-      // 输入栏走文档流；键盘弹起时缩短整页高度，避免 fixed 叠层留白
-      this._windowHeight = windowHeight;
-      this.setData({
-        statusBarHeight,
-        navBarHeight,
-        safeBottom,
-        pageHeight: windowHeight,
-      });
+      this.setData({ statusBarHeight, navBarHeight });
     } catch (e) {
       // keep defaults
     }
   },
 
-  /** 键盘高度变化时压缩页面；面板开合后重算顶部留白 */
-  refreshComposerPad(keyboardHeight) {
-    const h =
-      typeof keyboardHeight === "number"
-        ? keyboardHeight
-        : this.data.keyboardHeight || 0;
-    const windowHeight = this._windowHeight || this.data.pageHeight || 667;
-    const pageHeight = Math.max(200, windowHeight - (h || 0));
-    this.setData({ pageHeight }, () => this.updateTopSpace());
+  /** 键盘高度垫在页面底部，整页 flex 收缩，输入栏贴键盘上方 */
+  bindKeyboard() {
+    this._onKeyboardHeight = (res) => {
+      const h = Math.max(0, Math.floor((res && res.height) || 0));
+      if (h === this.data.keyboardHeight) return;
+      this.setData({ keyboardHeight: h }, () => this.updateTopSpace());
+    };
+    if (typeof wx.onKeyboardHeightChange === "function") {
+      wx.onKeyboardHeightChange(this._onKeyboardHeight);
+    }
   },
 
-  /** 消息不足一屏时，顶部补空白，把气泡沉到底（贴输入栏） */
+  unbindKeyboard() {
+    if (
+      this._onKeyboardHeight &&
+      typeof wx.offKeyboardHeightChange === "function"
+    ) {
+      wx.offKeyboardHeightChange(this._onKeyboardHeight);
+    }
+    this._onKeyboardHeight = null;
+  },
+
+  /** 消息不足一屏时顶部补空白，气泡贴输入栏 */
   updateTopSpace() {
     const measure = () => {
       const query = this.createSelectorQuery();
@@ -161,10 +162,14 @@ Page({
   onUnload() {
     if (this._offLocale) this._offLocale();
     clearTimeout(this._topSpaceTimer);
+    this.unbindKeyboard();
     this.closeWatch();
   },
 
   onHide() {
+    if (this.data.keyboardHeight) {
+      this.setData({ keyboardHeight: 0 });
+    }
     this.closeWatch();
   },
 
@@ -189,21 +194,24 @@ Page({
   },
 
   onFocus() {
-    this.setData({
-      showEmoji: false,
-      showPlus: false,
-      inputFocused: true,
-    });
-    this.refreshComposerPad();
+    this.setData(
+      {
+        showEmoji: false,
+        showPlus: false,
+        inputFocused: true,
+      },
+      () => this.updateTopSpace()
+    );
   },
 
   onBlur() {
     this.setData({ inputFocused: false });
-  },
-
-  onKeyboardHeight(e) {
-    const h = (e.detail && e.detail.height) || 0;
-    this.setData({ keyboardHeight: h }, () => this.refreshComposerPad(h));
+    // 失焦后键盘高度回调偶发滞后，兜底清零
+    setTimeout(() => {
+      if (!this.data.inputFocused && this.data.keyboardHeight) {
+        this.setData({ keyboardHeight: 0 }, () => this.updateTopSpace());
+      }
+    }, 80);
   },
 
   toggleEmoji() {
@@ -239,8 +247,7 @@ Page({
 
   onPickKind(e) {
     const kind = e.currentTarget.dataset.kind === "video" ? "video" : "image";
-    this.setData({ showPlus: false });
-    this.refreshComposerPad();
+    this.setData({ showPlus: false }, () => this.updateTopSpace());
     wx.showActionSheet({
       itemList: [t("publish.fromAlbum"), t("publish.fromCamera")],
       success: (res) => {
@@ -251,6 +258,8 @@ Page({
   },
 
   async bootstrap() {
+    // 首屏定位到最新消息时不播放滚动动画，避免进入会话后再从上向下滑。
+    this.setData({ scrollWithAnimation: false });
     let conversationId = this.data.conversationId;
     let peerOpenid = this.data.peerOpenid;
 
@@ -285,9 +294,14 @@ Page({
       });
     }
 
-    await this.loadMessages({ reset: true });
-    await markRead(conversationId);
-    this.openWatch();
+    try {
+      await this.loadMessages({ reset: true });
+      await markRead(conversationId);
+      this.openWatch();
+    } finally {
+      // 首屏定位完成后，后续新消息仍保留平滑滚动反馈。
+      this.setData({ scrollWithAnimation: true });
+    }
   },
 
   mapMessages(rows) {
@@ -315,10 +329,33 @@ Page({
         showTime,
         timeLabel,
         quote: this.normalizeQuote(m.quote),
+        historyPreview: this.buildHistoryPreview(m.historyCard),
         canRecall,
         previewText: this.previewText(m),
       };
     });
+  },
+
+  buildHistoryPreview(card) {
+    if (!card || !Array.isArray(card.items)) return [];
+    return card.items.slice(0, 3).map((item) => {
+      const name = item.senderNickName || "";
+      let text = item.content || item.preview || "";
+      if (item.type === "image") text = t("chat.previewImage");
+      else if (item.type === "video") text = t("chat.previewVideo");
+      else if (item.type === "post") text = t("chat.previewPost");
+      else if (item.type === "history") text = t("chat.previewHistory");
+      return name ? `${name}: ${text}` : text;
+    });
+  },
+
+  showSendError(error) {
+    const code = String((error && error.message) || error || "");
+    if (code === "cold_start_limit") {
+      wx.showToast({ title: t("chat.coldStartLimit"), icon: "none" });
+      return;
+    }
+    wx.showToast({ title: t("common.operationFailed"), icon: "none" });
   },
 
   normalizeQuote(quote) {
@@ -355,6 +392,7 @@ Page({
     if (m.type === "image") return t("chat.previewImage");
     if (m.type === "video") return t("chat.previewVideo");
     if (m.type === "post") return t("chat.previewPost");
+    if (m.type === "history") return t("chat.previewHistory");
     return m.content || "";
   },
 
@@ -489,6 +527,8 @@ Page({
               content: d.status === "recalled" ? "" : d.content || "",
               media: d.status === "recalled" ? null : d.media || null,
               quote: d.status === "recalled" ? null : d.quote || null,
+              postCard: d.status === "recalled" ? null : d.postCard || null,
+              historyCard: d.status === "recalled" ? null : d.historyCard || null,
               status: d.status || "normal",
               createdAt: d.createdAt,
               mine: d.senderOpenid === this.data.myOpenid,
@@ -628,15 +668,14 @@ Page({
       this.setData({ inputValue: "", quote: null, showEmoji: false });
     } catch (err) {
       console.error("send failed", err);
-      wx.showToast({ title: t("common.operationFailed"), icon: "none" });
+      this.showSendError(err);
     } finally {
       this._sending = false;
     }
   },
 
   async pickMedia(mediaType, sourceType) {
-    this.setData({ showPlus: false });
-    this.refreshComposerPad();
+    this.setData({ showPlus: false }, () => this.updateTopSpace());
     try {
       const res = await new Promise((resolve, reject) => {
         wx.chooseMedia({
@@ -711,18 +750,25 @@ Page({
       );
 
       this.patchListItem(localId, { progress: 92 });
-      const message = await this.doSend({
-        msgType: mediaType,
-        content: "",
-        media: {
-          fileId,
-          width,
-          height,
-          duration,
-          thumbFileId: "",
-        },
-        clientMsgId,
-      });
+      let message;
+      try {
+        message = await this.doSend({
+          msgType: mediaType,
+          content: "",
+          media: {
+            fileId,
+            width,
+            height,
+            duration,
+            thumbFileId: "",
+          },
+          clientMsgId,
+        });
+      } catch (sendErr) {
+        this.patchListItem(localId, { sendFailed: true, progress: 0 });
+        this.showSendError(sendErr);
+        return;
+      }
 
       // 去掉本地 pending，保留服务端回显（doSend 已合并；再清一次 pending）
       const cleaned = (this.data.list || []).filter((m) => m.id !== localId);
@@ -763,12 +809,48 @@ Page({
     const ts = new Date(msg.createdAt).getTime();
     const canRecall =
       !!msg.mine && Number.isFinite(ts) && Date.now() - ts <= RECALL_MS;
-    this.setData({
-      actionMsg: msg,
-      showAction: true,
-      canRecall,
-      showEmoji: false,
-      showPlus: false,
+    const query = this.createSelectorQuery();
+    query.select(`#msg-${id} .room-bubble-wrap`).boundingClientRect();
+    query.exec((res) => {
+      const rect = res && res[0];
+      let top = 120;
+      let targetX = 187;
+      let viewportCenter = 187;
+      try {
+        const windowInfo =
+          typeof wx.getWindowInfo === "function"
+            ? wx.getWindowInfo()
+            : wx.getSystemInfoSync();
+        viewportCenter = (windowInfo.windowWidth || 375) / 2;
+      } catch (err) {
+        // keep fallback
+      }
+      if (rect) {
+        top = Math.max(80, rect.top - 12);
+        targetX = rect.left + rect.width / 2;
+      }
+      this.setData({
+        actionMsg: msg,
+        showAction: true,
+        canRecall,
+        actionPos: { top, left: viewportCenter },
+        actionArrowLeft: 130,
+        showEmoji: false,
+        showPlus: false,
+      }, () => {
+        const menuQuery = this.createSelectorQuery();
+        menuQuery.select(".room-pop-menu").boundingClientRect();
+        menuQuery.exec((menuRes) => {
+          const menuRect = menuRes && menuRes[0];
+          if (!menuRect || !this.data.showAction) return;
+          const edge = 18;
+          const arrowLeft = Math.max(
+            edge,
+            Math.min(menuRect.width - edge, targetX - menuRect.left)
+          );
+          this.setData({ actionArrowLeft });
+        });
+      });
     });
   },
 
@@ -841,116 +923,52 @@ Page({
   async onActionForward() {
     const msg = this.data.actionMsg;
     if (!msg) return;
-    this.setData({
-      showAction: false,
-      showForward: true,
-      forwardKeyword: "",
-      forwardSelected: {},
-      forwardList: [],
-      forwardLoading: true,
-    });
-    await this.loadForwardList("");
-  },
-
-  async loadForwardList(keyword) {
-    this.setData({ forwardLoading: true });
-    try {
-      const kw = String(keyword || "").trim();
-      // 会话列表失败不能拖垮好友列表
-      const [followingRes, followersRes, convRes] = await Promise.all([
-        listRelations({ tab: "following", keyword: "", skip: 0, limit: 50 }).catch(
-          () => ({ list: [] })
-        ),
-        listRelations({ tab: "followers", keyword: "", skip: 0, limit: 50 }).catch(
-          () => ({ list: [] })
-        ),
-        listConversations({ includeHidden: true }).catch(() => ({ list: [] })),
-      ]);
-
-      const map = {};
-      const pushUser = (u) => {
-        if (!u || !u.openid || u.openid === this.data.myOpenid) return;
-        map[u.openid] = {
-          openid: u.openid,
-          nickName: u.nickName || t("common.wechatUser"),
-          avatarUrl: u.avatarUrl || DEFAULT_AVATAR,
-        };
-      };
-      ((followingRes && followingRes.list) || []).forEach(pushUser);
-      ((followersRes && followersRes.list) || []).forEach(pushUser);
-
-      const chatRank = {};
-      ((convRes && convRes.list) || []).forEach((c, idx) => {
-        if (c && c.peerOpenid && chatRank[c.peerOpenid] == null) {
-          chatRank[c.peerOpenid] = idx;
-        }
-      });
-
-      let list = Object.keys(map).map((id) => map[id]);
-      if (kw) {
-        const lower = kw.toLowerCase();
-        list = list.filter(
-          (u) => (u.nickName || "").toLowerCase().indexOf(lower) > -1
-        );
-      }
-      list.sort((a, b) => {
-        const ra = chatRank[a.openid];
-        const rb = chatRank[b.openid];
-        const ha = ra == null ? 1 : 0;
-        const hb = rb == null ? 1 : 0;
-        if (ha !== hb) return ha - hb;
-        if (ra != null && rb != null && ra !== rb) return ra - rb;
-        return String(a.nickName || "").localeCompare(String(b.nickName || ""));
-      });
-
-      this.setData({ forwardList: list, forwardLoading: false });
-    } catch (e) {
-      console.error("load forward list failed", e);
-      this.setData({ forwardList: [], forwardLoading: false });
-      wx.showToast({ title: t("common.operationFailed"), icon: "none" });
-    }
-  },
-
-  onForwardSearch(e) {
-    const keyword = (e.detail && e.detail.value) || "";
-    this.setData({ forwardKeyword: keyword });
-    if (this._fwdTimer) clearTimeout(this._fwdTimer);
-    this._fwdTimer = setTimeout(() => this.loadForwardList(keyword), 280);
-  },
-
-  onToggleForward(e) {
-    const openid = e.currentTarget.dataset.openid;
-    if (!openid) return;
-    const selected = Object.assign({}, this.data.forwardSelected);
-    if (selected[openid]) delete selected[openid];
-    else selected[openid] = true;
-    this.setData({ forwardSelected: selected });
+    this.setData({ showAction: false, showForward: true });
   },
 
   closeForward() {
     if (this.data.forwardSending) return;
-    this.setData({ showForward: false, forwardSelected: {}, actionMsg: null });
+    this.setData({ showForward: false, actionMsg: null });
   },
 
-  async onConfirmForward() {
+  async onForwardConfirm(e) {
     const msg = this.data.actionMsg;
-    const peers = Object.keys(this.data.forwardSelected || {});
-    if (!msg || !peers.length || this.data.forwardSending) return;
+    const peers = (e.detail && e.detail.peers) || [];
+    const peerOpenids = peers.map((p) => p.openid).filter(Boolean);
+    if (!msg || !peerOpenids.length || this.data.forwardSending) return;
     this.setData({ forwardSending: true });
     try {
-      const res = await forwardMessage({ messageId: msg.id, peerOpenids: peers });
+      const res = await forwardMessage({ messageId: msg.id, peerOpenids });
       if (!res.ok) throw new Error(res.error || "forward failed");
       wx.showToast({ title: t("chat.forwardSuccess"), icon: "success" });
       this.setData({
         showForward: false,
         forwardSending: false,
-        forwardSelected: {},
         actionMsg: null,
       });
-    } catch (e) {
+    } catch (err) {
       this.setData({ forwardSending: false });
-      wx.showToast({ title: t("common.operationFailed"), icon: "none" });
+      this.showSendError(err);
     }
+  },
+
+  onTapHistoryCard(e) {
+    const id = e.currentTarget.dataset.id;
+    const msg = (this.data.list || []).find((m) => m.id === id);
+    if (!msg || !msg.historyCard) return;
+    try {
+      wx.setStorageSync("uknow_chat_history_view", msg.historyCard);
+    } catch (err) {
+      wx.showToast({ title: t("common.operationFailed"), icon: "none" });
+      return;
+    }
+    wx.navigateTo({ url: "/pages/chat/history" });
+  },
+
+  onTapPostCard(e) {
+    const postId = e.currentTarget.dataset.id;
+    if (!postId) return;
+    wx.navigateTo({ url: `/pages/post/detail?id=${postId}` });
   },
 
   onPreviewImage(e) {

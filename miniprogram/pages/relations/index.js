@@ -20,7 +20,7 @@ Page({
     list: [],
     total: 0,
     hasMore: false,
-    loading: false,
+    loading: true,
     refreshing: false,
     defaultAvatar: DEFAULT_AVATAR,
   },

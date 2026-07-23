@@ -10,24 +10,15 @@
     bindscrolltolower="onReachBottomList"
     lower-threshold="120"
   >
-    <view class="profile-top">
+    <view class="profile-top" style="padding-top: {{statusBarHeight}}px;">
       <view class="profile-header" bindtap="onTapHeader">
-        <view
-          class="profile-school"
-          wx:if="{{loggedIn && showSchool && schoolLabel}}"
-        >
+        <view class="profile-avatar-column">
           <image
-            class="profile-school-icon"
-            src="{{schoolLogoUrl || defaultSchoolLogo}}"
-            mode="aspectFit"
+            class="profile-avatar {{loggedIn ? '' : 'profile-avatar--guest'}}"
+            src="{{avatarUrl}}"
+            mode="aspectFill"
           />
-          <text class="profile-school-text">{{schoolLabel}}</text>
         </view>
-        <image
-          class="profile-avatar {{loggedIn ? '' : 'profile-avatar--guest'}}"
-          src="{{avatarUrl}}"
-          mode="aspectFill"
-        />
         <view class="profile-meta">
           <view class="profile-name">{{nickName}}</view>
           <view
@@ -40,6 +31,20 @@
         </view>
         <view class="profile-settings" catchtap="onTapSettings">
           <image class="profile-settings-icon" src="/images/settings.svg" mode="aspectFit" />
+        </view>
+      </view>
+
+      <view
+        class="profile-school-row"
+        wx:if="{{loggedIn && showSchool && schoolLabel}}"
+      >
+        <view class="profile-school">
+          <image
+            class="profile-school-icon"
+            src="{{schoolLogoUrl || defaultSchoolLogo}}"
+            mode="aspectFit"
+          />
+          <text class="profile-school-text">{{schoolLabel}}</text>
         </view>
       </view>
 

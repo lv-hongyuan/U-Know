@@ -1,0 +1,34 @@
+<view class="page history-page">
+  <view class="history-head">
+    <text class="history-title">{{title}}</text>
+  </view>
+  <scroll-view class="history-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="history-item" wx:for="{{items}}" wx:key="id">
+      <text class="history-nick">{{item.senderNickName || t.common.wechatUser}}</text>
+      <view class="history-bubble">
+        <image
+          wx:if="{{item.type === 'image' && item.media.fileId}}"
+          class="history-media"
+          src="{{item.media.fileId}}"
+          mode="widthFix"
+        />
+        <video
+          wx:elif="{{item.type === 'video' && item.media.fileId}}"
+          class="history-video"
+          src="{{item.media.fileId}}"
+          controls
+          object-fit="contain"
+        />
+        <view wx:elif="{{item.type === 'post' && item.postCard}}" class="history-post">
+          <image
+            class="history-post-cover"
+            src="{{item.postCard.coverUrl || '/images/empty.svg'}}"
+            mode="aspectFill"
+          />
+          <text class="history-post-title">{{item.postCard.title}}</text>
+        </view>
+        <text wx:else class="history-text">{{item.displayText}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>

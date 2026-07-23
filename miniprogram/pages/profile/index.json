@@ -2,5 +2,7 @@
   "usingComponents": {
     "post-waterfall": "/components/post-waterfall/index"
   },
-  "navigationBarTitleText": " "
+  "navigationBarTitleText": " ",
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "white"
 }

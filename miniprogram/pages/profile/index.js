@@ -42,11 +42,18 @@ Page({
     refreshing: false,
     hasMore: true,
     emptyText: "",
+    statusBarHeight: 20,
   },
 
   noop() {},
 
   onLoad() {
+    const windowInfo =
+      typeof wx.getWindowInfo === "function"
+        ? wx.getWindowInfo()
+        : wx.getSystemInfoSync();
+    this.setData({ statusBarHeight: windowInfo.statusBarHeight || 20 });
+
     this._offLocale = onLocaleChange(() => {
       this.applyI18n();
       this.syncUser();

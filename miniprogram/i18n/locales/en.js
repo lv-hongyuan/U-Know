@@ -63,6 +63,7 @@ module.exports = {
   },
   explore: {
     blank: "Shop",
+    developing: "In development…",
   },
   message: {
     blank: "Messages",
@@ -110,6 +111,13 @@ module.exports = {
     pickImage: "Photo",
     pickVideo: "Video",
     sendFailed: "Failed to send",
+    previewPost: "【Post】",
+    shareToFriend: "Share with friends",
+    pickFriendFirst: "Select a friend",
+    shareSuccess: "Shared",
+    coldStartLimit: "Can't send more until they follow or reply",
+    previewHistory: "【Chat history】",
+    chatHistory: "Chat history",
   },
   profile: {
     tapToLogin: "Tap to sign in",

@@ -1,0 +1,81 @@
+.history-page {
+  min-height: 100vh;
+  background: #fff6f0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.history-head {
+  padding: 24rpx 28rpx 12rpx;
+}
+
+.history-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #3d1408;
+}
+
+.history-scroll {
+  flex: 1;
+  height: 0;
+  padding: 12rpx 28rpx calc(24rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.history-item {
+  margin-bottom: 28rpx;
+}
+
+.history-nick {
+  display: block;
+  font-size: 22rpx;
+  color: #9a6b52;
+  margin-bottom: 8rpx;
+}
+
+.history-bubble {
+  display: inline-block;
+  max-width: 88%;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 4rpx 16rpx rgba(61, 20, 8, 0.06);
+}
+
+.history-text {
+  font-size: 28rpx;
+  line-height: 1.45;
+  color: #3d1408;
+  word-break: break-word;
+}
+
+.history-media {
+  max-width: 360rpx;
+  border-radius: 12rpx;
+}
+
+.history-video {
+  width: 360rpx;
+  height: 260rpx;
+  border-radius: 12rpx;
+}
+
+.history-post {
+  width: 320rpx;
+}
+
+.history-post-cover {
+  width: 100%;
+  height: 160rpx;
+  border-radius: 12rpx;
+  background: #e8ece8;
+}
+
+.history-post-title {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: #3d1408;
+  font-weight: 600;
+}

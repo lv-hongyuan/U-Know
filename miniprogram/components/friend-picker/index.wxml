@@ -13,7 +13,7 @@
       bindscrolltolower="onScrollToLower"
       lower-threshold="80"
     >
-      <view class="fp-loading" wx:if="{{loading && !list.length}}">{{t.common.loading}}</view>
+      <list-skeleton wx:if="{{loading && !list.length}}" type="relation" rows="{{8}}" />
       <block wx:elif="{{list.length}}">
         <view
           class="fp-item"

@@ -1,6 +1,6 @@
 Component({
   properties: {
-    /** waterfall | notify | relation | school */
+    /** waterfall | notify | relation | school | detail */
     type: {
       type: String,
       value: "waterfall",

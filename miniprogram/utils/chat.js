@@ -57,6 +57,7 @@ function sendMessage({
   media = null,
   quote = null,
   postCard = null,
+  historyCard = null,
   clientMsgId = "",
 } = {}) {
   return callChat({
@@ -67,6 +68,7 @@ function sendMessage({
     media,
     quote,
     postCard,
+    historyCard,
     clientMsgId,
   });
 }

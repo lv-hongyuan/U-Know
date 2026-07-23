@@ -17,19 +17,25 @@
         data-openid="{{post.openid}}"
         catchtap="onTapAuthorAvatar"
       />
-      <text
-        class="detail-nick"
-        data-openid="{{post.openid}}"
-        catchtap="onTapAuthorAvatar"
-      >{{post.nickName}}</text>
-      <view class="detail-school-tag" wx:if="{{authorShowSchool && authorSchoolShortName}}">{{authorSchoolShortName}}</view>
-      <view
-        wx:if="{{!isOwner}}"
-        class="detail-follow {{following ? 'detail-follow--on' : ''}} {{followActing ? 'detail-follow--busy' : ''}}"
-        catchtap="onToggleFollow"
-      >{{following ? t.post.followed : t.post.follow}}</view>
-      <view class="detail-menu" wx:if="{{isOwner}}" catchtap="onTapMenu">
-        <image class="detail-menu-icon" src="/images/more.svg" mode="aspectFit" />
+      <view class="detail-author-main">
+        <text
+          class="detail-nick"
+          data-openid="{{post.openid}}"
+          catchtap="onTapAuthorAvatar"
+        >{{post.nickName}}</text>
+      </view>
+      <view class="detail-author-actions">
+        <view
+          wx:if="{{!isOwner}}"
+          class="detail-follow {{following ? 'detail-follow--on' : ''}} {{followActing ? 'detail-follow--busy' : ''}}"
+          catchtap="onToggleFollow"
+        >{{following ? t.post.followed : t.post.follow}}</view>
+        <view class="detail-menu" wx:if="{{isOwner}}" catchtap="onTapMenu">
+          <image class="detail-menu-icon" src="/images/more.svg" mode="aspectFit" />
+        </view>
+        <view class="detail-menu" wx:else catchtap="onTapShare">
+          <image class="detail-menu-icon detail-menu-icon--share" src="/images/share-up-right.svg" mode="aspectFit" />
+        </view>
       </view>
     </view>
 
@@ -60,9 +66,8 @@
     <view class="detail-body">
       <view class="detail-title">{{post.title}}</view>
       <view class="detail-content">{{post.content}}</view>
-      <view class="detail-topics" wx:if="{{post.topics.length || post.schoolLabel}}">
+    <view class="detail-topics" wx:if="{{post.topics.length}}">
         <text class="detail-topic" wx:for="{{post.topics}}" wx:key="*this">#{{item}}</text>
-        <text class="detail-topic detail-topic--school" wx:if="{{post.schoolLabel}}">{{post.schoolLabel}}</text>
       </view>
     </view>
 
@@ -202,8 +207,9 @@
       </view>
     </view>
 
+    <list-skeleton wx:if="{{commentsLoading && !comments.length}}" type="notify" rows="{{4}}" />
     <view class="detail-empty" wx:if="{{!commentsLoading && !comments.length}}">{{t.post.noComments}}</view>
-    <view class="detail-status" wx:if="{{commentsLoading}}">{{t.common.loading}}</view>
+    <view class="detail-status" wx:if="{{commentsLoading && comments.length}}">{{t.common.loading}}</view>
     <view class="detail-status" wx:elif="{{!commentsHasMore && comments.length}}">{{t.feed.noMore}}</view>
     <view class="detail-scroll-pad"></view>
   </scroll-view>
@@ -297,8 +303,15 @@
       </view>
     </view>
   </view>
+
+  <friend-picker
+    show="{{showSharePicker}}"
+    title="{{t.chat.shareToFriend}}"
+    bind:close="closeSharePicker"
+    bind:confirm="onShareConfirm"
+  />
 </view>
 
 <view class="page detail-page detail-page--loading" wx:elif="{{loading}}">
-  <text class="detail-status">{{t.common.loading}}</text>
+  <list-skeleton type="detail" />
 </view>

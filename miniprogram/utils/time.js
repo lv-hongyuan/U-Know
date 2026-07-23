@@ -49,13 +49,9 @@ function formatHm(d) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-function formatHms(d) {
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-}
-
 /**
  * 微信风格聊天时间条文案（已确认需展示时再调用）
- * - 当天：时分秒
+ * - 当天：时分
  * - 昨天：昨天 + 时分
  * - 近 7 天内：周x + 时分
  * - 今年更早：月日 + 时分
@@ -71,7 +67,7 @@ function formatChatDividerTime(createdAt, t) {
   const dayDiff = calendarDayDiff(now, ts);
   const hm = formatHm(d);
 
-  if (dayDiff === 0) return formatHms(d);
+  if (dayDiff === 0) return hm;
   if (dayDiff === 1) return `${t("time.yesterday")} ${hm}`;
   if (dayDiff > 1 && dayDiff < 7) {
     return `${t(`time.weekday${d.getDay()}`)} ${hm}`;

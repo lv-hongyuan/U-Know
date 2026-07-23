@@ -12,7 +12,7 @@ const follows = db.collection("follows");
 const RECALL_MS = 3 * 60 * 1000;
 const PAGE_DEFAULT = 20;
 const PAGE_MAX = 50;
-const MSG_TYPES = ["text", "image", "video", "post"];
+const MSG_TYPES = ["text", "image", "video", "post", "history"];
 
 /**
  * conversations
@@ -31,8 +31,8 @@ const MSG_TYPES = ["text", "image", "video", "post"];
  * messages
  * {
  *   conversationId, clientMsgId, senderOpenid,
- *   type: text|image|video|post|system,
- *   content, media?, quote?, postCard?,
+ *   type: text|image|video|post|history|system,
+ *   content, media?, quote?, postCard?, historyCard?,
  *   status: normal|recalled,
  *   deletedFor: [openid],
  *   createdAt
@@ -74,6 +74,7 @@ function previewOf(type, content) {
   if (type === "image") return "[image]";
   if (type === "video") return "[video]";
   if (type === "post") return "[post]";
+  if (type === "history") return "[history]";
   if (type === "system") return String(content || "");
   const text = String(content || "").trim();
   return text.length > 80 ? `${text.slice(0, 80)}…` : text;
@@ -90,6 +91,103 @@ function normalizePostCard(card) {
     authorAvatarUrl: String(card.authorAvatarUrl || ""),
     likeCount: Math.max(0, Number(card.likeCount) || 0),
   };
+}
+
+function normalizeHistoryCard(card) {
+  if (!card || !Array.isArray(card.items) || !card.items.length) return null;
+  return {
+    title: String(card.title || "聊天记录").slice(0, 80),
+    items: card.items.slice(0, 100).map((item) => ({
+      id: String(item.id || ""),
+      senderOpenid: String(item.senderOpenid || ""),
+      senderNickName: String(item.senderNickName || "").slice(0, 40),
+      type: item.type || "text",
+      content: String(item.content || "").slice(0, 500),
+      preview: String(item.preview || "").slice(0, 120),
+      media: item.media || null,
+      postCard: item.postCard || null,
+      createdAt: item.createdAt || "",
+    })),
+  };
+}
+
+async function peerFollowsMe(peerOpenid, myOpenid) {
+  if (!peerOpenid || !myOpenid) return false;
+  try {
+    const res = await follows
+      .where({ followerOpenid: peerOpenid, followeeOpenid: myOpenid })
+      .limit(1)
+      .get();
+    return !!(res.data && res.data[0]);
+  } catch (e) {
+    return false;
+  }
+}
+
+async function peerHasReplied(conversationId, peerOpenid) {
+  if (!conversationId || !peerOpenid) return false;
+  try {
+    const res = await messages
+      .where({
+        conversationId,
+        senderOpenid: peerOpenid,
+        status: "normal",
+      })
+      .limit(1)
+      .get();
+    return !!(res.data && res.data.length);
+  } catch (e) {
+    return false;
+  }
+}
+
+async function countColdStartSent(openid, conversationId) {
+  let chatCount = 0;
+  let postCount = 0;
+  try {
+    const res = await messages
+      .where({
+        conversationId,
+        senderOpenid: openid,
+        status: "normal",
+      })
+      .limit(20)
+      .get();
+    (res.data || []).forEach((m) => {
+      if (m.type === "post") postCount += 1;
+      else if (["text", "image", "video", "history"].indexOf(m.type) >= 0) {
+        chatCount += 1;
+      }
+    });
+  } catch (e) {
+    // ignore
+  }
+  return { chatCount, postCount };
+}
+
+async function assertCanSend(openid, conv, type) {
+  const peerOpenid = (conv.memberIds || []).find((id) => id !== openid);
+  if (!peerOpenid) return { ok: true };
+
+  const [followsMe, replied] = await Promise.all([
+    peerFollowsMe(peerOpenid, openid),
+    peerHasReplied(conv._id, peerOpenid),
+  ]);
+  if (followsMe || replied) return { ok: true };
+
+  const counts = await countColdStartSent(openid, conv._id);
+  if (type === "post") {
+    if (counts.postCount >= 1 || counts.chatCount + counts.postCount >= 3) {
+      return { ok: false, error: "cold_start_limit" };
+    }
+    return { ok: true };
+  }
+  if (["text", "image", "video", "history"].indexOf(type) >= 0) {
+    if (counts.chatCount >= 2 || counts.chatCount + counts.postCount >= 3) {
+      return { ok: false, error: "cold_start_limit" };
+    }
+  }
+  return { ok: true };
 }
 
 async function getUserSnap(openid) {
@@ -329,6 +427,7 @@ function serializeMessage(m, openid) {
     media: m.status === "recalled" ? null : m.media || null,
     quote: m.status === "recalled" ? null : m.quote || null,
     postCard: m.status === "recalled" ? null : m.postCard || null,
+    historyCard: m.status === "recalled" ? null : m.historyCard || null,
     status: m.status || "normal",
     createdAt: m.createdAt,
     mine: m.senderOpenid === openid,
@@ -398,7 +497,9 @@ async function insertMessage(openid, {
   media,
   quote,
   postCard,
+  historyCard,
   clientMsgId,
+  skipColdCheck,
 }) {
   if (MSG_TYPES.indexOf(type) < 0) {
     return { ok: false, error: "invalid_type" };
@@ -421,6 +522,11 @@ async function insertMessage(openid, {
         duplicated: true,
       };
     }
+  }
+
+  if (!skipColdCheck) {
+    const gate = await assertCanSend(openid, conv, type);
+    if (!gate.ok) return gate;
   }
 
   let quotePayload = null;
@@ -456,6 +562,11 @@ async function insertMessage(openid, {
     return { ok: false, error: "missing_post" };
   }
 
+  const history = type === "history" ? normalizeHistoryCard(historyCard) : null;
+  if (type === "history" && !history) {
+    return { ok: false, error: "missing_history" };
+  }
+
   const createdAt = now();
   const doc = {
     conversationId,
@@ -466,6 +577,7 @@ async function insertMessage(openid, {
     media: media || null,
     quote: quotePayload,
     postCard: card,
+    historyCard: history,
     status: "normal",
     deletedFor: [],
     createdAt,
@@ -546,6 +658,7 @@ async function recall(openid, messageId) {
       media: null,
       quote: null,
       postCard: null,
+      historyCard: null,
     },
   });
 
@@ -629,6 +742,8 @@ async function forward(openid, { messageId, peerOpenids }) {
       type: src.type,
       content: src.content,
       media: src.media,
+      postCard: src.postCard,
+      historyCard: src.historyCard,
       clientMsgId: `fwd_${messageId}_${peer}_${Date.now()}`,
     });
     results.push({
@@ -848,6 +963,7 @@ exports.main = async (event) => {
         media: event.media,
         quote: event.quote,
         postCard: event.postCard,
+        historyCard: event.historyCard,
         clientMsgId: event.clientMsgId,
       });
     }

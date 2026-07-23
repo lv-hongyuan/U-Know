@@ -41,26 +41,6 @@
   justify-content: center;
 }
 
-.tab-badge {
-  position: absolute;
-  top: -8rpx;
-  right: -10rpx;
-  min-width: 28rpx;
-  height: 28rpx;
-  padding: 0 6rpx;
-  border-radius: 14rpx;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 18rpx;
-  font-weight: 600;
-  border: 2rpx solid #3d1408;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  z-index: 2;
-}
-
 .tab-icon-wrap--active {
   background: #ffb347;
 }

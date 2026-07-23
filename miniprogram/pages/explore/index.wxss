@@ -2,11 +2,16 @@
   height: 100vh;
   background: #fff6f0;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
 
-.explore-scroll {
-  height: 100%;
-  padding: 16rpx 12rpx 0;
-  box-sizing: border-box;
+.explore-developing {
+  margin-top: -80rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #8a968c;
+  line-height: 1.4;
 }

@@ -23,10 +23,6 @@
             src="{{selected === index ? item.iconActive : item.icon}}"
             mode="aspectFit"
           />
-          <view
-            class="tab-badge"
-            wx:if="{{item.pagePath === '/pages/message/index' && messageBadge}}"
-          >{{messageBadge}}</view>
         </view>
         <text class="tab-label {{selected === index ? 'tab-label--active' : ''}}">{{item.text}}</text>
       </view>

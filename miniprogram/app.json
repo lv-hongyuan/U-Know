@@ -16,8 +16,9 @@
     "pages/contact/index",
     "pages/relations/index",
     "pages/user/index",
-    "pages/chat/room",
-    "pages/publish/edit",
+  "pages/chat/room",
+  "pages/chat/history",
+  "pages/publish/edit",
     "pages/publish/compose",
     "pages/post/detail"
   ],

@@ -63,6 +63,7 @@ module.exports = {
   },
   explore: {
     blank: "商城",
+    developing: "開發中…",
   },
   message: {
     blank: "訊息",
@@ -110,6 +111,13 @@ module.exports = {
     pickImage: "圖片",
     pickVideo: "影片",
     sendFailed: "發送失敗",
+    previewPost: "【帖子】",
+    shareToFriend: "分享給好友",
+    pickFriendFirst: "請選擇好友",
+    shareSuccess: "已分享",
+    coldStartLimit: "好友關注/回覆您之前，無法再次發送消息",
+    previewHistory: "【聊天記錄】",
+    chatHistory: "聊天記錄",
   },
   profile: {
     tapToLogin: "點擊登入",

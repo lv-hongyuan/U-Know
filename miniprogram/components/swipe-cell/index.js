@@ -73,11 +73,5 @@ Component({
         return rpx * 0.5;
       }
     },
-
-    onActionTap(e) {
-      const action = e.currentTarget.dataset.action;
-      this.close();
-      this.triggerEvent("action", { action });
-    },
   },
 });

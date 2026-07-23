@@ -9,7 +9,7 @@ Page({
     t: getI18nData(),
     feed: "plaza",
     list: [],
-    loading: false,
+    loading: true,
     refreshing: false,
     hasMore: true,
     emptyText: "",

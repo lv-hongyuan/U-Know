@@ -1,6 +1,7 @@
 {
   "usingComponents": {
-    "post-waterfall": "/components/post-waterfall/index"
+    "post-waterfall": "/components/post-waterfall/index",
+    "list-skeleton": "/components/list-skeleton/index"
   },
   "navigationBarTitleText": " "
 }

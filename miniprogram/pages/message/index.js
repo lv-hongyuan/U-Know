@@ -8,7 +8,6 @@ const {
 const {
   listConversations,
   setConversationFlags,
-  unreadTotal,
 } = require("../../utils/chat");
 const {
   getCachedConversationList,
@@ -55,6 +54,12 @@ function previewLabel(last, tFn) {
   if (type === "video" || preview === "[video]" || preview.indexOf("[video]") === 0) {
     return tFn("chat.previewVideo");
   }
+  if (type === "post" || preview === "[post]" || preview.indexOf("[post]") === 0) {
+    return tFn("chat.previewPost");
+  }
+  if (type === "history" || preview === "[history]" || preview.indexOf("[history]") === 0) {
+    return tFn("chat.previewHistory");
+  }
   if (type === "system" || preview === "[recalled]") return tFn("chat.recalled");
   return preview || "";
 }
@@ -64,7 +69,7 @@ Page({
     t: getI18nData(),
     navBarHeight: 64,
     refreshing: false,
-    loadingConvs: false,
+    loadingConvs: true,
     badge: {
       comment: "",
       like: "",
@@ -146,23 +151,10 @@ Page({
   async loadBadges() {
     if (!isLoggedIn()) {
       this.setData({ badge: toBadgeMap(emptyCounts()) });
-      this.updateTabChatBadge(0);
       return;
     }
-    const [counts, chatRes] = await Promise.all([
-      refreshCategoryUnread(),
-      unreadTotal().catch(() => ({ ok: false, total: 0 })),
-    ]);
+    const counts = await refreshCategoryUnread();
     this.setData({ badge: toBadgeMap(counts) });
-    this.updateTabChatBadge((chatRes && chatRes.total) || 0);
-  },
-
-  updateTabChatBadge(total) {
-    if (typeof this.getTabBar === "function" && this.getTabBar()) {
-      this.getTabBar().setData({
-        messageBadge: formatBadge(total),
-      });
-    }
   },
 
   async loadConversations({ reset }) {
@@ -185,9 +177,6 @@ Page({
       const list = (result.list || []).map((c) => this.mapConversation(c));
       setCachedConversationList(result.list || []);
       this.setData({ conversations: list, loadingConvs: false });
-
-      const total = list.reduce((sum, c) => sum + (Number(c.unread) || 0), 0);
-      this.updateTabChatBadge(total);
     } catch (err) {
       console.error("load conversations failed", err);
       this.setData({ loadingConvs: false });
@@ -211,9 +200,6 @@ Page({
         .watch({
           onChange: () => {
             this.loadConversations({ reset: false });
-            unreadTotal()
-              .then((res) => this.updateTabChatBadge((res && res.total) || 0))
-              .catch(() => {});
           },
           onError: (err) => {
             console.warn("conversation watch error", err);
@@ -282,6 +268,8 @@ Page({
     const action = e.detail && e.detail.action;
     if (!id || !action) return;
 
+    this.selectAllComponents(".conv-swipe-cell").forEach((cell) => cell.close());
+
     try {
       if (action === "delete") {
         const res = await setConversationFlags(id, { delete: true });
@@ -318,8 +306,6 @@ Page({
           return next;
         });
         this.setData({ conversations });
-        const total = conversations.reduce((sum, c) => sum + (Number(c.unread) || 0), 0);
-        this.updateTabChatBadge(total);
       }
     } catch (err) {
       console.error("swipe action failed", err);

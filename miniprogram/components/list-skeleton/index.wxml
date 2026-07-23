@@ -62,4 +62,21 @@
       </view>
     </view>
   </block>
+
+  <!-- 详情页：作者信息 + 主内容 + 文本 -->
+  <view class="sk-detail" wx:elif="{{type === 'detail'}}">
+    <view class="sk-detail-author">
+      <view class="sk-bone sk-avatar"></view>
+      <view class="sk-detail-author-main">
+        <view class="sk-bone sk-line sk-line--md"></view>
+        <view class="sk-bone sk-line sk-line--xs"></view>
+      </view>
+    </view>
+    <view class="sk-bone sk-detail-cover"></view>
+    <view class="sk-detail-body">
+      <view class="sk-bone sk-line sk-line--title"></view>
+      <view class="sk-bone sk-line sk-line--full"></view>
+      <view class="sk-bone sk-line sk-line--lg"></view>
+    </view>
+  </view>
 </view>

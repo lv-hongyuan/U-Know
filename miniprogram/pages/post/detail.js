@@ -3,6 +3,7 @@ const { formatCommentTime } = require("../../utils/time");
 const { isLoggedIn, getLocalUser } = require("../../utils/user");
 const { follow, unfollow, isFollowing } = require("../../utils/follow");
 const { openUserProfile } = require("../../utils/navigate");
+const { sharePost } = require("../../utils/chat");
 const {
   COMMENT_MAX,
   REPLY_PREVIEW,
@@ -32,8 +33,6 @@ Page({
     liked: false,
     collected: false,
     isOwner: false,
-    authorShowSchool: false,
-    authorSchoolShortName: "",
     following: false,
     followActing: false,
     comments: [],
@@ -60,6 +59,8 @@ Page({
     commentLiking: false,
     scrollIntoView: "",
     focusAnchorId: "",
+    showSharePicker: false,
+    shareSending: false,
   },
 
   postId: "",
@@ -118,7 +119,7 @@ Page({
       );
     }
     this.setData(updates);
-    wx.setNavigationBarTitle({ title: t("nav.postDetail") });
+    wx.setNavigationBarTitle({ title: " " });
   },
 
   buildCommentPlaceholder() {
@@ -219,13 +220,6 @@ Page({
         images: result.post.images || [],
         topics: result.post.topics || [],
         avatarUrl: result.post.avatarUrl || DEFAULT_AVATAR,
-        schoolLabel:
-          result.post.schoolLabel ||
-          (result.post.schoolName
-            ? result.post.schoolCampus
-              ? `${result.post.schoolName} · ${result.post.schoolCampus}`
-              : result.post.schoolName
-            : ""),
       };
       const isOwner = !!result.isOwner;
       this.setData({
@@ -233,8 +227,6 @@ Page({
         liked: !!result.liked,
         collected: !!result.collected,
         isOwner,
-        authorShowSchool: !!result.authorShowSchool,
-        authorSchoolShortName: result.authorSchoolShortName || "",
         following: false,
         loading: false,
       });
@@ -468,12 +460,14 @@ Page({
   onTapMenu() {
     if (!this.data.isOwner) return;
     wx.showActionSheet({
-      itemList: [t("post.edit")],
+      itemList: [t("post.edit"), t("chat.shareToFriend")],
       success: (res) => {
         if (res.tapIndex === 0) {
           wx.navigateTo({
             url: `/pages/publish/compose?postId=${this.postId}`,
           });
+        } else if (res.tapIndex === 1) {
+          this.onTapShare();
         }
       },
     });
@@ -832,6 +826,58 @@ Page({
       wx.showToast({ title: t("post.commentFailed"), icon: "none" });
     } finally {
       this.setData({ sending: false });
+    }
+  },
+
+  onTapShare() {
+    if (!this.requireLogin()) return;
+    if (!this.data.post) return;
+    this.setData({ showSharePicker: true });
+  },
+
+  closeSharePicker() {
+    if (this.data.shareSending) return;
+    this.setData({ showSharePicker: false });
+  },
+
+  buildSharePostPayload() {
+    const post = this.data.post;
+    if (!post) return null;
+    let coverUrl = "";
+    if (post.type === "image" && post.images && post.images.length) {
+      coverUrl = post.images[0];
+    }
+    return {
+      postId: post._id || this.postId,
+      title: post.title || post.content || "",
+      coverUrl,
+      authorOpenid: post.openid || "",
+      authorNickName: post.nickName || "",
+      authorAvatarUrl: post.avatarUrl || DEFAULT_AVATAR,
+      likeCount: Number(post.likeCount) || 0,
+    };
+  },
+
+  async onShareConfirm(e) {
+    const peers = (e.detail && e.detail.peers) || [];
+    const peerOpenids = peers.map((p) => p.openid).filter(Boolean);
+    const post = this.buildSharePostPayload();
+    if (!post || !peerOpenids.length || this.data.shareSending) return;
+    this.setData({ shareSending: true });
+    try {
+      const res = await sharePost({ peerOpenids, post });
+      if (!res.ok) throw new Error(res.error || "share failed");
+      wx.showToast({ title: t("chat.shareSuccess"), icon: "success" });
+      this.setData({ showSharePicker: false, shareSending: false });
+    } catch (err) {
+      console.error("share post failed", err);
+      this.setData({ shareSending: false });
+      const code = String((err && err.message) || "");
+      if (code === "cold_start_limit") {
+        wx.showToast({ title: t("chat.coldStartLimit"), icon: "none" });
+      } else {
+        wx.showToast({ title: t("common.operationFailed"), icon: "none" });
+      }
     }
   },
 });

@@ -42,7 +42,6 @@ Component({
     list: buildList(),
     showPublishSheet: false,
     t: getI18nData(),
-    messageBadge: "",
   },
 
   lifetimes: {

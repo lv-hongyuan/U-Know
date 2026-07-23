@@ -130,6 +130,16 @@
   height: 20rpx;
 }
 
+.sk-line--full {
+  width: 100%;
+  margin-top: 20rpx;
+}
+
+.sk-line--lg {
+  width: 72%;
+  margin-top: 16rpx;
+}
+
 /* —— notify / relation / school rows —— */
 .sk-row {
   display: flex;
@@ -159,4 +169,35 @@
   border-radius: 20rpx;
   overflow: hidden;
   margin: 0 24rpx;
+}
+
+/* —— detail —— */
+.sk-detail {
+  margin: 24rpx;
+  padding: 28rpx;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-sizing: border-box;
+}
+
+.sk-detail-author {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.sk-detail-author-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sk-detail-cover {
+  width: 100%;
+  height: 360rpx;
+  margin-top: 28rpx;
+  border-radius: 16rpx;
+}
+
+.sk-detail-body {
+  margin-top: 28rpx;
 }

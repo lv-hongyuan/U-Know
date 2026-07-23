@@ -1,5 +1,8 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "帖子",
+  "usingComponents": {
+    "friend-picker": "/components/friend-picker/index",
+    "list-skeleton": "/components/list-skeleton/index"
+  },
+  "navigationBarTitleText": " ",
   "navigationBarBackgroundColor": "#FFF6F0"
 }

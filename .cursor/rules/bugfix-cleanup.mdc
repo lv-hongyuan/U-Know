@@ -1,0 +1,33 @@
+---
+description: Bug 修复时必须清理为该问题引入的冗余代码，避免叠层补丁
+alwaysApply: true
+---
+
+# Bug 修复：清除冗余代码
+
+修复 UI / 逻辑 bug 时，**不要在旧补丁上再叠一层**。要找出真正根因，用干净方案替换，并删掉本问题历次尝试留下的死代码。
+
+## 强制步骤
+
+1. **定位根因**：先读现有实现，标出上次为修同问题加的字段、样式、定时器、`setData` 路径。
+2. **一次改对**：用单一清晰方案替换，禁止「再加一个 padding / pageHeight / fixed」叠加。
+3. **删冗余**：同步删除不再使用的 `data` 字段、内联 style、测量函数、定时器、无用 CSS class。
+4. **自检**：改完后全局搜旧字段名，确认无残留引用。
+
+## 反例 → 正例
+
+```js
+// ❌ 键盘挡住输入：又加 pageHeight 压缩，又留 safeBottom，又 adjust-position=false
+style="height: {{pageHeight}}px;"
+refreshComposerPad(h) { this.setData({ pageHeight: windowHeight - h }); }
+
+// ✅ 输入栏在文档流 + 系统顶起键盘；安全区用 CSS
+// .room-composer { padding-bottom: env(safe-area-inset-bottom); }
+// <input adjust-position="{{true}}" />
+```
+
+## 适用范围
+
+- 用户反馈「还是不行 / 又空白 / 又挡住」等同问题反复修
+- 任何明确说「修 bug」的请求（默认包含清冗余）
+- 不适用于全新功能首次实现（但仍应避免半成品死代码入库）

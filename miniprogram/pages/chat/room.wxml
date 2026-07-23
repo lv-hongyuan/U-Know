@@ -1,4 +1,4 @@
-<view class="page room-page" style="height: {{pageHeight}}px;">
+<view class="page room-page" style="padding-bottom: {{keyboardHeight}}px;">
   <view class="room-nav" style="padding-top: {{statusBarHeight}}px;">
     <view class="room-nav-inner" style="height: {{navBarHeight}}px;">
       <view class="room-nav-back" bindtap="onBack">
@@ -21,7 +21,7 @@
     enhanced
     show-scrollbar="{{false}}"
     scroll-into-view="{{scrollIntoView}}"
-    scroll-with-animation
+    scroll-with-animation="{{scrollWithAnimation}}"
     bindscrolltoupper="onScrollToUpper"
     upper-threshold="80"
   >
@@ -43,7 +43,9 @@
         <view
           wx:else
           id="msg-{{item.id}}"
-          class="room-row {{item.mine ? 'room-row--mine' : 'room-row--peer'}}"
+          class="room-row {{item.mine ? 'room-row--mine' : 'room-row--peer'}} {{showAction && actionMsg && actionMsg.id === item.id ? 'room-row--selected' : ''}}"
+          data-id="{{item.id}}"
+          bindlongpress="onLongPressMsg"
         >
           <image
             class="room-avatar"
@@ -55,7 +57,6 @@
           <view
             class="room-bubble-wrap"
             data-id="{{item.id}}"
-            bindlongpress="onLongPressMsg"
           >
             <!-- 文本气泡（含引用） -->
             <view
@@ -168,6 +169,21 @@
                 </view>
               </view>
             </view>
+            <!-- 聊天记录卡片 -->
+            <view
+              wx:elif="{{item.type === 'history' && item.historyCard}}"
+              class="room-history-card"
+              data-id="{{item.id}}"
+              catchtap="onTapHistoryCard"
+            >
+              <text class="room-history-title">{{item.historyCard.title}}</text>
+              <text
+                class="room-history-line"
+                wx:for="{{item.historyPreview}}"
+                wx:key="*this"
+                wx:for-item="line"
+              >{{line}}</text>
+            </view>
           </view>
 
           <image
@@ -182,10 +198,7 @@
     </view>
   </scroll-view>
 
-  <view
-    class="room-composer"
-    style="padding-bottom: {{keyboardHeight ? 0 : safeBottom}}px;"
-  >
+  <view class="room-composer {{keyboardHeight ? 'room-composer--kb' : ''}}">
     <view class="room-quote-bar" wx:if="{{quote}}">
       <image
         wx:if="{{quote.thumbUrl && quote.type === 'image'}}"
@@ -226,7 +239,6 @@
           bindinput="onInput"
           bindfocus="onFocus"
           bindblur="onBlur"
-          bindkeyboardheightchange="onKeyboardHeight"
           bindconfirm="onSendText"
           placeholder="{{t.chat.inputPlaceholder}}"
         />
@@ -268,17 +280,29 @@
     </view>
   </view>
 
-  <!-- 长按操作 -->
-  <view class="room-mask" wx:if="{{showAction}}" catchtouchmove="noop" bindtap="closeAction">
-    <view class="room-action-sheet" catchtap="noop">
-      <view class="room-action-item" bindtap="onActionForward">{{t.chat.forward}}</view>
-      <view class="room-action-item" bindtap="onActionQuote">{{t.chat.quote}}</view>
-      <view class="room-action-item" bindtap="onActionDelete">{{t.chat.delete}}</view>
+  <!-- 长按操作：悬浮在消息上方 -->
+  <view
+    class="room-pop-mask"
+    wx:if="{{showAction}}"
+    catchtouchmove="noop"
+    bindtap="closeAction"
+  >
+    <view
+      class="room-pop-menu"
+      style="top: {{actionPos.top}}px; left: {{actionPos.left}}px;"
+      catchtap="noop"
+    >
+      <view class="room-pop-item" catchtap="onActionForward">{{t.chat.forward}}</view>
+      <view class="room-pop-item" catchtap="onActionQuote">{{t.chat.quote}}</view>
+      <view class="room-pop-item room-pop-item--danger" catchtap="onActionDelete">{{t.chat.delete}}</view>
       <view
-        class="room-action-item {{canRecall ? '' : 'room-action-item--disabled'}}"
-        bindtap="onActionRecall"
+        class="room-pop-item {{canRecall ? '' : 'room-pop-item--disabled'}}"
+        catchtap="onActionRecall"
       >{{t.chat.recall}}</view>
-      <view class="room-action-item room-action-item--cancel" bindtap="closeAction">{{t.common.cancel}}</view>
+      <view
+        class="room-pop-arrow"
+        style="left: {{actionArrowLeft}}px;"
+      ></view>
     </view>
   </view>
 

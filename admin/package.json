@@ -1,0 +1,15 @@
+{
+  "name": "uknow-admin",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=api",
+    "dev:web": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=api && npm run build --workspace=web",
+    "check": "npm run check --workspace=api && npm run check --workspace=web"
+  }
+}

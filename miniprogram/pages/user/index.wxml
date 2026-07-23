@@ -12,22 +12,13 @@
   >
     <view class="user-top">
       <view class="user-header">
-        <view
-          class="user-school"
-          wx:if="{{user.showSchool !== false && user.schoolName}}"
-        >
+        <view class="user-avatar-column">
           <image
-            class="user-school-icon"
-            src="{{user.schoolLogoUrl || defaultSchoolLogo}}"
-            mode="aspectFit"
+            class="user-avatar"
+            src="{{user.avatarUrl || defaultAvatar}}"
+            mode="aspectFill"
           />
-          <text class="user-school-text">{{user.schoolName}}{{user.schoolCampus ? ' · ' + user.schoolCampus : ''}}</text>
         </view>
-        <image
-          class="user-avatar"
-          src="{{user.avatarUrl || defaultAvatar}}"
-          mode="aspectFill"
-        />
         <view class="user-meta">
           <view class="user-name-row">
             <view class="user-name">{{user.nickName}}</view>
@@ -45,6 +36,20 @@
           <view class="user-region" wx:if="{{user.regionText}}">{{user.regionText}}</view>
           <view class="user-bio" wx:if="{{user.bio}}">{{user.bio}}</view>
           <view class="user-bio user-bio--muted" wx:else>{{t.profile.noBio}}</view>
+        </view>
+      </view>
+
+      <view
+        class="user-school-row"
+        wx:if="{{user.showSchool !== false && user.schoolName}}"
+      >
+        <view class="user-school">
+          <image
+            class="user-school-icon"
+            src="{{user.schoolLogoUrl || defaultSchoolLogo}}"
+            mode="aspectFit"
+          />
+          <text class="user-school-text">{{user.schoolName}}{{user.schoolCampus ? ' · ' + user.schoolCampus : ''}}</text>
         </view>
       </view>
 
@@ -89,5 +94,5 @@
 </view>
 
 <view class="page user-page user-page--loading" wx:elif="{{loading}}">
-  <text class="user-loading">{{t.common.loading}}</text>
+  <list-skeleton type="detail" />
 </view>

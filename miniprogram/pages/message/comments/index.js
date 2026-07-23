@@ -11,7 +11,7 @@ Page({
   data: {
     t: getI18nData(),
     list: [],
-    loading: false,
+    loading: true,
     refreshing: false,
     hasMore: true,
     defaultAvatar: DEFAULT_AVATAR,
